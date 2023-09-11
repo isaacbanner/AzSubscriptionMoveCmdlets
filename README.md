@@ -16,7 +16,7 @@ To get started with this project, follow these steps:
 3. Run the application.
 
 ## Dependencies
-This project requires the following dependencies:
+This project requires the following dependencies *(it doesn't -ed.)*:
 
 - Python 3.x
 - Flask
