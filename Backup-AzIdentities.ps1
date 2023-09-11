@@ -12,6 +12,8 @@ Param(
     $Subscription
 )
 
+$argIdentityQuery = 'Resources | where subscriptionId =~ "fa5fc227-a624-475e-b696-cdd604c735bc" | where isnotempty(identity) | where identity.["type"] has "SystemAssigned" | project id'
+
 function Get-UserContext ($Subscription) {  
     $context = Get-AzContext
 
@@ -26,14 +28,20 @@ function Get-UserContext ($Subscription) {
 
 function Get-AllSystemAssignedIdentities ($Subscription)
 {
-    $ArgIdentities = Search-AzGraph -Query 'Resources | where subscriptionId =~ "fa5fc227-a624-475e-b696-cdd604c735bc" | where isnotempty(identity) | where identity.["type"] has "SystemAssigned" | project id'
+    $ArgIdentities = Search-AzGraph -Query $argIdentityQuery
     return $ArgIdentities | % {Get-AzSystemAssignedIdentity -Scope $_.id}
 }
+
+$context = Get-UserContext($Subscription)
 
 $userAssigned = Get-AzUserAssignedIdentity -SubscriptionId $Subscription
 $systemAssigned = Get-AllSystemAssignedIdentities($Subscription)
 $allIdentities = $systemAssigned + $userAssigned
 
-# TODO: current object format contains too much filler and property names are not aligned with downstream inputs
-
-return $allIdentities
+return $allIdentities | % {[PSCustomObject]@{
+    id = $_.id
+    objectId = $_.principalId
+    clientId = $_.clientId
+    location = $_.location
+    type = $_.type
+}}
