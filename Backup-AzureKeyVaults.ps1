@@ -14,7 +14,7 @@ function Get-AllAzureKeyVaults () {
     }
 
     # Save retrieved akv in a json file
-    $resultAkvList | ConvertTo-Json | Out-File -FilePath $akvOutputFilePath
+    $resultAkvList | ConvertTo-Json -Depth 4 | Out-File -FilePath $akvOutputFilePath
 }
 
 # Connect-AzAccount -Subscription $SubscriptionId
