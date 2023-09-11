@@ -9,7 +9,11 @@
 Param(
     [Parameter(Mandatory=$True)]
     [string]
-    $Subscription
+    $Subscription,
+
+    [Parameter(Mandatory=$True)]
+    [string]
+    $TenantId
 )
 
 $argQuery = 'Resources | where subscriptionId =~ "fa5fc227-a624-475e-b696-cdd604c735bc" | where isnotempty(identity) | where identity.["type"] !has "None" | project id, location, identity'
@@ -37,19 +41,19 @@ function Get-AllIdentityEnabledResources ($Subscription)
     }}
 }
 
-function Get-UserContext ($Subscription) {  
+function Get-UserContext ($Subscription, $TenantId) {  
     $context = Get-AzContext
 
     if ($null -eq $context -or $Subscription -ne $context.Subscription.Id)
     {
-        Connect-AzAccount -Subscription $Subscription
+        Connect-AzAccount -Subscription $Subscription -TenantId $TenantId
         $context = Get-AzContext
     }
 
     return $context
 }
 
-$context = Get-UserContext($Subscription)
+$context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 $resources = Get-AllIdentityEnabledResources
 
 return $resources
