@@ -34,4 +34,6 @@ $userAssigned = Get-AzUserAssignedIdentity -SubscriptionId $Subscription
 $systemAssigned = Get-AllSystemAssignedIdentities($Subscription)
 $allIdentities = $systemAssigned + $userAssigned
 
+# TODO: current object format contains too much filler and property names are not aligned with downstream inputs
+
 return $allIdentities
