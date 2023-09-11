@@ -32,5 +32,6 @@ function Get-AllSystemAssignedIdentities ($Subscription)
 
 $userAssigned = Get-AzUserAssignedIdentity -SubscriptionId $Subscription
 $systemAssigned = Get-AllSystemAssignedIdentities($Subscription)
+$allIdentities = $systemAssigned + $userAssigned
 
-return $systemAssigned + $userAssigned
+return $allIdentities
