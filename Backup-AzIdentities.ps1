@@ -21,7 +21,7 @@ $argIdentityQuery = 'Resources | where subscriptionId =~ "fa5fc227-a624-475e-b69
 function Get-UserContext ($Subscription, $TenantId) {  
     $context = Get-AzContext
 
-    if ($null -eq $context -or $Subscription -ne $context.Subscription.Id)
+    if ($null -eq $context -or $Subscription -ne $context.Subscription.Id -or $TenantId -ne $context.TenantId)
     {
         Connect-AzAccount -Subscription $Subscription -TenantId $TenantId
         $context = Get-AzContext
