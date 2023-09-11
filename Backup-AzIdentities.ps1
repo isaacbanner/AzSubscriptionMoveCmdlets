@@ -3,6 +3,8 @@
     Reads all identities and identity-enabled resources from a subscription and dumps to a file.
 .PARAMETER Subscription
     The subscription to dump.
+.PARAMETER TenantId
+    The tenantId of the subscription.
 #>
 
 [CmdletBinding()]

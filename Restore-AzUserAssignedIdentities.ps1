@@ -2,7 +2,11 @@
 .SYNOPSIS
     Reads all identities and identity-enabled resources from a subscription and dumps to a file.
 .PARAMETER Subscription
-    The subscription to dump.
+    The subscription in which to restore identities.
+.PARAMETER TenantId
+    The new tenantId in which to restore identities.
+.PARAMETER identities
+    The UA identities to be restored.
 #>
 
 [CmdletBinding()]
