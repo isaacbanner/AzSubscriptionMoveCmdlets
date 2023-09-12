@@ -53,8 +53,8 @@ function Format-ArgResource($argResource)
         name = $argResource.name
         resourceProvider = $resourceProvider
         resourceType = $resourceType
-        type = $argResource.identity.type
-        userAssignedIdentities = Convert-PsCustomObjectToHashtable $argResource.identity.userAssignedIdentities
+        identityType = $argResource.identity.type
+        userAssignedIdentities = Convert-PsCustomObjectToHashtable -PsObject $argResource.identity.userAssignedIdentities
         resourceGroupName = $argResource.resourceGroup
     }
 }
