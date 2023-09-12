@@ -2,13 +2,9 @@
 .SYNOPSIS
     Reads all federated identity credentials associated with user assigned identity and dumps to a file.
 .PARAMETER Subscription
-    The subscription in which to restore identities.
-.PARAMETER TenantId
-    The new tenantId in which to restore identities.
+    The subscription to dump.
 .PARAMETER identities
-    The UA identities to be restored.
-.PARAMETER resources
-    The resources in the subscription, potentially to which the identities are assigned.
+    The identities for which FIC needs to be dumped.
 #>
 [CmdletBinding()]
 Param(
