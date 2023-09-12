@@ -27,20 +27,11 @@ Param(
 
     [Parameter(Mandatory=$True)]
     [psobject[]]
-    $Resources,
+    $Resources
 )
 
-function Get-UserContext ($Subscription, $TenantId) {  
-    $context = Get-AzContext
 
-    if ($null -eq $context -or $Subscription -ne $context.Subscription.Id -or $TenantId -ne $context.TenantId)
-    {
-        Connect-AzAccount -Subscription $Subscription -TenantId $TenantId
-        $context = Get-AzContext
-    }
-
-    return $context
-}
+Import-Module .\AzRestMethodTools
 
 function Restore-AzSingleIdentity($identity)
 {
@@ -48,7 +39,7 @@ function Restore-AzSingleIdentity($identity)
     return New-AzUserAssignedIdentity -ResourceGroupName $identity.ResourceGroupName -Name $identity.Name -Location $identity.Location
 }
 
-function Resource-AzIdentityAssignments($resources)
+function Restore-AzIdentityAssignments($resources)
 {
     # For a resource, attempt a PATCH on the identities.
     # If that fails, do a GET on the resource, update the body, and PUT the update

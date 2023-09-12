@@ -20,17 +20,7 @@ Param(
 
 $argIdentityQuery = 'Resources | where subscriptionId =~ "fa5fc227-a624-475e-b696-cdd604c735bc" | where isnotempty(identity) | where identity.["type"] has "SystemAssigned" | project id'
 
-function Get-UserContext ($Subscription, $TenantId) {  
-    $context = Get-AzContext
-
-    if ($null -eq $context -or $Subscription -ne $context.Subscription.Id -or $TenantId -ne $context.TenantId)
-    {
-        Connect-AzAccount -Subscription $Subscription -TenantId $TenantId
-        $context = Get-AzContext
-    }
-
-    return $context
-}
+Import-Module .\AzRestMethodTools
 
 function Get-AllSystemAssignedIdentities ($Subscription)
 {
