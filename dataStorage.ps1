@@ -18,7 +18,7 @@ function Set-MigrationData {
     
     begin {
         Write-Debug "Writing migration data for $Identifier"
-        if ($null -ne $Config.FolderName) {
+        if ($Config.FolderName) {
             if (-not (Test-Path $Config.FolderName)) {
                 Write-Debug "$Config.FolderName does not exist, creating it."
                 New-Item -Path $Config.FolderName -ItemType Directory -Force
@@ -36,7 +36,7 @@ function Set-MigrationData {
             }
         }
 
-        if ($null -ne $Config.StorageContainer) {
+        if ($Config.StorageContainer) {
             $message = "Writing to Azure Storage isn't supported yet."
             Write-Error $message
             throw $message
@@ -50,7 +50,7 @@ function Set-MigrationData {
     }
     
     end {
-        if ($null -ne $Config.FolderName) {
+        if ($Config.FolderName) {
             ConvertTo-Json $objects > "$($Config.FolderName)/$Identifier.json"
         }
 
@@ -67,7 +67,7 @@ function Get-MigrationData {
        [string]$identifier
     )
     Write-Debug "Reading migration data for $Identifier"
-    if ($null -ne $Config.FolderName) {
+    if ($Config.FolderName) {
         $filePath = "$($Config.FolderName)/$Identifier.json"
         if (-not (Test-Path $filePath)) {
             $message = "$filePath does not exist."
@@ -78,7 +78,7 @@ function Get-MigrationData {
         return Get-Content $filePath | ConvertFrom-Json 
     }
 
-    if ($null -ne $Config.StorageContainer) {
+    if ($Config.StorageContainer) {
         $message = "Reading from Azure Storage isn't supported yet."
         Write-Error $message
         throw $message
