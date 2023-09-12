@@ -18,7 +18,7 @@ Param(
     $TenantId
 )
 
-$argQuery = 'Resources | where subscriptionId =~ "fa5fc227-a624-475e-b696-cdd604c735bc" | where isnotempty(identity) | where identity.["type"] !has "None" | project id, location, identity'
+$argQuery = 'Resources | where subscriptionId =~ "{0}" | where isnotempty(identity) | where identity.["type"] !has "None"'
 
 Import-Module .\AzRestMethodTools
 
@@ -34,18 +34,41 @@ function Convert-PsCustomObjectToHashtable ($PsObject)
     }
 }
 
+function Split-ResourceProviderAndType($providerNamespaceAndType)
+{
+    $firstWhack = $providerNamespaceAndType.IndexOf('/')
+    $namespace = $providerNamespaceAndType.Substring(0, $firstWhack)
+    $fullResourceType = $providerNamespaceAndType.Substring($firstWhack + 1)
+
+    return @($namespace, $fullResourceType)
+}
+
+function Format-ArgResource($argResource)
+{
+    $resourceProvider, $resourceType = Split-ResourceProviderAndType $argResource.type
+
+    return [PSCustomObject]@{
+        id = $argResource.id
+        location = $argResource.location
+        name = $argResource.name
+        resourceProvider = $resourceProvider
+        resourceType = $resourceType
+        type = $argResource.identity.type
+        userAssignedIdentities = Convert-PsCustomObjectToHashtable $argResource.identity.userAssignedIdentities
+        resourceGroupName = $argResource.resourceGroup
+    }
+}
+
 function Get-AllIdentityEnabledResources ($Subscription)
 {
-    $ArgResources = Search-AzGraph -Query $argQuery
-    return $ArgResources | % {[PSCustomObject]@{
-        id = $_.id
-        location = $_.location
-        type = $_.identity.type
-        userAssignedIdentities = Convert-PsCustomObjectToHashtable($_.identity.userAssignedIdentities)
-    }}
+    $query = $argQuery -f $Subscription
+    $ArgResources = Search-AzGraph -Query $query
+    return $ArgResources 
 }
 
 $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
-$resources = Get-AllIdentityEnabledResources
+$resources = Get-AllIdentityEnabledResources -Subscription $Subscription
 
-return $resources
+return $resources | % {
+    Format-ArgResource $_
+}
