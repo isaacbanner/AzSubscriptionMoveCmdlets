@@ -26,7 +26,7 @@ function Get-FederatedIdentityCredentialsForUserAssignedIdentities
     $federatedIdentityCredentials = @()
 
     foreach ($identity in $Identities) {
-        if ($identity.type -eq "UserAssigned") {
+        if ($identity.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities") {
             $federatedIdentityCredential = Get-AzFederatedIdentityCredentials -IdentityName  identity.name -ResourceGroupName identity.resourceGroupName -SubscriptionId $Subscription
             if ($federatedIdentityCredential) {
                 $federatedIdentityCredentials += $federatedIdentityCredential
@@ -39,4 +39,10 @@ function Get-FederatedIdentityCredentialsForUserAssignedIdentities
 
 $federatedIdentityCredentials = Get-FederatedIdentityCredentialsForUserAssignedIdentities
 
-return $federatedIdentityCredentials
+return $federatedIdentityCredentials | % {[PSCustomObject]@{
+    name = $_.name
+    issuer = $_.issuer  
+    subject = $_.subject
+    audience = $_.audience
+    id = $_.id
+}}
