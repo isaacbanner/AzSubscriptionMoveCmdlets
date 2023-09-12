@@ -44,3 +44,5 @@ Note: When casting deserialized data from a `PSCustomObject` to a class, the cas
 
 ## Serialization
 Migration data can be stored using `Set-MigrationData` and later retrieved using `Get-MigrationData`. `Get-MigrationData` will return `[PSCustomObject]`s for any data that was previously stored.
+
+Under the hood, serialization will use `ConvertTo-Json` and `ConvertFrom-Json`. JSON was chosen because it's readily available within Powershell and is human-readable. Human-readable serialization will make debugging easier and should also make it easier for customers to audit the script's behaviour.
