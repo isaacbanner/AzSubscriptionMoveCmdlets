@@ -1,24 +1,37 @@
+<#
+.SYNOPSIS
+    Reads all federated identity credentials associated with user assigned identity and dumps to a file.
+.PARAMETER Subscription
+    The subscription in which to restore identities.
+.PARAMETER TenantId
+    The new tenantId in which to restore identities.
+.PARAMETER identities
+    The UA identities to be restored.
+.PARAMETER resources
+    The resources in the subscription, potentially to which the identities are assigned.
+#>
+[CmdletBinding()]
+Param(
+
+    [Parameter(Mandatory=$True)]
+    [string]
+    $Subscription,
+    
+    [Parameter(Mandatory=$True)]
+    [psobject[]]
+    $Identities
+)
+
 
 function Get-FederatedIdentityCredentialsForUserAssignedIdentities 
 {
-    param (
-        [Parameter(Mandatory=$true)]
-        [string[]]$userAssignedIdentityIds
-    )
-
-
-    # Define regular expressions to match subscription ID, resource group name, and identity name
-    $subscriptionPattern = "/subscriptions/([^/]+)/"
-    $resourceGroupPattern = "/resourcegroups/([^/]+)/"
-    $identityPattern = "/userassignedidentities/([^/]+)$"
-
 
     # Initialize an array to store the Federated Identity Credentials
     $federatedIdentityCredentials = @()
 
-    foreach ($userAssignedIdentityId in $userAssignedIdentityIds) {
-        if ($userAssignedIdentityId -match $subscriptionPattern -and $userAssignedIdentityId -match $resourceGroupPattern -and $userAssignedIdentityId -match $identityPattern) {
-            $federatedIdentityCredential = Get-AzFederatedIdentityCredentials -IdentityName  $Matches[3] -ResourceGroupName $Matches[2] -SubscriptionId $Matches[1]
+    foreach ($identity in $Identities) {
+        if ($identity.type -eq "UserAssigned") {
+            $federatedIdentityCredential = Get-AzFederatedIdentityCredentials -IdentityName  identity.name -ResourceGroupName identity.resourceGroupName -SubscriptionId $Subscription
             if ($federatedIdentityCredential) {
                 $federatedIdentityCredentials += $federatedIdentityCredential
             }  
@@ -27,3 +40,7 @@ function Get-FederatedIdentityCredentialsForUserAssignedIdentities
 
     return $federatedIdentityCredentials
 }
+
+$federatedIdentityCredentials = Get-FederatedIdentityCredentialsForUserAssignedIdentities
+
+return $federatedIdentityCredentials
