@@ -36,7 +36,7 @@ $uaIdentityPattern = "/userAssignedIdentities/([^/]+)/"
 
 function Restore-AzSingleFederatedCredentialIdentity($federatedIdentityCredential)
 {
-    if ($federatedIdentityCredential.id -match $resourceGroupPattern -and $federatedIdentityCredential.id -match $identityPattern) {
+    if ($federatedIdentityCredential.id -match $resourceGroupPattern -and $federatedIdentityCredential.id -match $uaIdentityPattern) {
         $resourceGroupName = $Matches[1]
         $identityName = $Matches[2]
         $modifiedIssuer =   $federatedIdentityCredential.issuer -replace $OldTenantId, $NewTenantId
