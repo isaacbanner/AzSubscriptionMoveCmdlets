@@ -1,6 +1,7 @@
 class StorageConfig {
-    [string]$FolderName
-    $StorageContainer
+    [string]$LocalFolderName
+    [string]$StorageAccountResourceGroup
+    [string]$StorageAccountName
 }
 
 function Set-MigrationData {
@@ -18,21 +19,21 @@ function Set-MigrationData {
     
     begin {
         Write-Debug "Writing migration data for $Identifier"
-        if ($Config.FolderName) {
-            if (-not (Test-Path $Config.FolderName)) {
-                Write-Debug "$Config.FolderName does not exist, creating it."
-                New-Item -Path $Config.FolderName -ItemType Directory -Force
-            }
+        if ($Config.LocalFolderName) {
+            $folderName = "$($Config.LocalFolderName)/migrationData"
 
             if ($Force) {
-                Write-Debug "Force was specified, deleting all files from $($Config.FolderName)"
-                Get-ChildItem $Config.FolderName | Remove-Item
-            }
-
-            if ((Get-ChildItem $Config.FolderName | Measure-Object).Count -ne 0) {
-                $message = "$($Config.FolderName) is not empty, use -Force to overwrite existing files."
+                Write-Debug "Force was specified, deleting $folderName"
+                Remove-Item -Recurse -Force $folderName
+            } elseif (Test-Path -Path $folderName) {
+                $message = "$folderName already exists, use -Force to overwrite existing data."
                 Write-Error $message
                 throw $message
+            }
+
+            if (-not (Test-Path $folderName)) {
+                Write-Debug "$folderName does not exist, creating it."
+                New-Item -Path $folderName -ItemType Directory -Force
             }
         }
 
@@ -50,8 +51,8 @@ function Set-MigrationData {
     }
     
     end {
-        if ($Config.FolderName) {
-            ConvertTo-Json $objects > "$($Config.FolderName)/$Identifier.json"
+        if ($Config.LocalFolderName) {
+            ConvertTo-Json $objects > "$($Config.LocalFolderName)/migrationData/$Identifier.json"
         }
 
         Write-Debug "Finished writing migration data for $Identifier"
@@ -67,8 +68,8 @@ function Get-MigrationData {
        [string]$identifier
     )
     Write-Debug "Reading migration data for $Identifier"
-    if ($Config.FolderName) {
-        $filePath = "$($Config.FolderName)/$Identifier.json"
+    if ($Config.LocalFolderName) {
+        $filePath = "$($Config.LocalFolderName)/migrationData/$Identifier.json"
         if (-not (Test-Path $filePath)) {
             $message = "$filePath does not exist."
             Write-Error $message
