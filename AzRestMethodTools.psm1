@@ -34,3 +34,16 @@ function Get-AzResourceDefinition($Resource)
 
     return ConvertFrom-Json $response.Content
 }
+
+function ConvertTo-IdentityModel($AzIdentity)
+{
+    return [PSCustomObject]@{
+        clientId = $AzIdentity.clientId
+        id = $AzIdentity.id  # Azure ResourceId
+        location = $AzIdentity.location
+        name = $AzIdentity.name
+        objectId = $AzIdentity.principalId
+        resourceGroupName = $AzIdentity.resourceGroupName
+        type = $AzIdentity.type # Azure ResourceType
+    }
+}
