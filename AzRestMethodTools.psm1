@@ -3,7 +3,7 @@
     PS Module with multiple Az Rest Method utilities
 #>
 
-function Get-UserContext ($Subscription, $TenantId) {  
+function Get-UserContext ([string] $Subscription, [string] $TenantId) {  
     $context = Get-AzContext
 
     if ($null -eq $context -or $Subscription -ne $context.Subscription.Id -or $TenantId -ne $context.Tenant)
@@ -27,7 +27,7 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
     }
 }
 
-function Get-AzResourceDefinition($Resource)
+function Get-AzResourceDefinition([PsCustomObject] $Resource)
 {
     $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.ResourceProvider -ResourceType $Resource.ResourceType
     $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.defaultApiVersion -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
@@ -35,7 +35,36 @@ function Get-AzResourceDefinition($Resource)
     return ConvertFrom-Json $response.Content
 }
 
-function ConvertTo-IdentityModel($AzIdentity)
+
+function ConvertTo-Hashtable ([PsCustomObject] $PsObject)
+{
+    If ($null -ne $PsObject) 
+    {
+        return $PsObject.psobject.properties | % { $ht = @{} } { $ht[$_.Name] = $_.Value } { $ht }
+    } 
+    Else 
+    {
+        return @{}
+    }
+}
+
+function ConvertTo-ResourceModel([PsCustomObject] $argResource)
+{
+    $resourceProvider, $resourceType = Split-ResourceProviderAndType $argResource.type
+
+    return [PSCustomObject]@{
+        id = $argResource.id
+        location = $argResource.location
+        name = $argResource.name
+        resourceProvider = $resourceProvider
+        resourceType = $resourceType
+        identityType = $argResource.identity.type
+        userAssignedIdentities = ConvertTo-Hashtable -PsObject $argResource.identity.userAssignedIdentities
+        resourceGroupName = $argResource.resourceGroup
+    }
+}
+
+function ConvertTo-IdentityModel([PsCustomObject] $AzIdentity)
 {
     return [PSCustomObject]@{
         clientId = $AzIdentity.clientId
@@ -45,5 +74,16 @@ function ConvertTo-IdentityModel($AzIdentity)
         objectId = $AzIdentity.principalId
         resourceGroupName = $AzIdentity.resourceGroupName
         type = $AzIdentity.type # Azure ResourceType
+    }
+}
+
+function ConvertTo-FederatedIdentityCredentialModel([PsCustomObject] $Fic)
+{
+    return [PSCustomObject]@{
+        name = $Fic.name
+        issuer = $Fic.issuer  
+        subject = $Fic.subject
+        audience = $Fic.audience
+        id = $Fic.id
     }
 }
