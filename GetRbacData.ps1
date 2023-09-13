@@ -14,6 +14,7 @@ function Get-RoleAssignmentsForPrincipals {
 function Get-CustomRoleDefinitionsForRoleAssignments {
     param (
         [Parameter(Mandatory=$true)]
+        [AllowEmptyCollection()]
         [string[]]$roleDefinitionIds
     )
     $customRoleDefinitions = @()
@@ -33,6 +34,7 @@ function Add-RoleAssignments {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
         [Microsoft.Azure.Commands.Resources.Models.Authorization.PSRoleAssignment[]]$RoleAssignments,
         [Parameter(Mandatory = $true)]
         [System.Collections.Hashtable]$PrincipalIdMapping
@@ -44,7 +46,7 @@ function Add-RoleAssignments {
         if ($PrincipalIdMapping.ContainsKey($principalId)) {
             $newPrincipalId = $PrincipalIdMapping[$principalId];
             
-            Write-Output "Found mapping from PrincipalId:" $principalId " to principalId: " $newPrincipalId "Scope:" $roleAssignment.Scope; 
+            Write-Output "Found mapping from PrincipalId: $($principalId)  to principalId: $($newPrincipalId) Scope: $($roleAssignment.Scope)"; 
 
             $existingRA = Get-AzRoleAssignment -ObjectId $newPrincipalId -Scope $roleAssignment.Scope -RoleDefinitionName $roleAssignment.RoleDefinitionName;
 
@@ -63,7 +65,7 @@ function Add-RoleAssignments {
             }
             else 
             {
-                Write-Output "RA already exists for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
+                Write-Output "RA already exists for Principal: $($newPrincipalId), Scope: $($roleAssignment.Scope), RoleDefinitionName $($roleAssignment.RoleDefinitionName)";
             }
         }
     }
@@ -80,8 +82,8 @@ function Add-RoleDefinitions {
 
     foreach ($item in $RoleDefinitions){
 
-        Write-Output "ItemId : $($item.Id)";
-        $existingRole = Get-AzRoleDefinition -Id $item.Id;
+        Write-Output "Role definition ItemId : $($item.Id), Name: $($item.Name)";
+        $existingRole = Get-AzRoleDefinition -Name $item.Name;
         
         <#
         # This code is still error prone. For Hackathon we will simplify the logic 
