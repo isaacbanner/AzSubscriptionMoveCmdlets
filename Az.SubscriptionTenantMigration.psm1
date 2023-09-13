@@ -110,7 +110,7 @@ function Restore-AzIdentityAndRbac(
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedMap
 
     # Restore local access policies for UA identities
-    # TODO: DO
+    Restore-AllAzureKeyVaults -allAkvs $KeyVaults -PrincipalIdMapping $userAssignedMap
 
     # Restore FIC on new UA objects
     $Fics | % {
@@ -130,7 +130,7 @@ function Restore-AzIdentityAndRbac(
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $systemAssignedMap
     
     # Restore local access policies for SA identities
-    # TODO: DO
+    Restore-AllAzureKeyVaults -allAkvs $KeyVaults -PrincipalIdMapping $systemAssignedMap
 
     # Clean up temp UA identity
     Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
