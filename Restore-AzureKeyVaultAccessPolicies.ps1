@@ -1,11 +1,11 @@
 Import-Module Az.KeyVault
 
-function Restore-AllAzureKeyVaults () {
-    $akvOutputFilePath = ".\akvInfo.json"
+function Restore-AllAzureKeyVaults ($allAkvs) {
+    # $akvOutputFilePath = ".\akvInfo.json"
+    # $allAkvs = (Get-Content $akvOutputFilePath -Raw) | ConvertFrom-Json
 
     Write-Output "Start restoring Azure KeyVault Access Policies ..."
     
-    $allAkvs = (Get-Content $akvOutputFilePath -Raw) | ConvertFrom-Json
     $count = 1
     foreach ($akv in $allAkvs) {
         Update-AkvAcessPolicy -akv $akv
