@@ -30,27 +30,30 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
     $provider = ConvertFrom-Json $providerResponse.Content
     $resourceTypeDefinition = $provider.resourceTypes | ? { $ResourceType -eq $_.resourceType }
 
+    $defaultApiVersion = $resourceTypeDefinition.defaultApiVersion
+    $releaseApiVersions = $resourceTypeDefinition.apiVersions | ? { -not ($_ -match "preview") }
+    $previewApiVersions = $resourceTypeDefinition.apiVersions | ? { $_ -match "preview" }
+
     return [PSCustomObject]@{
-        _defaultApiVersion = $resourceTypeDefinition.defaultApiVersion
-        releaseApiVersions = $resourceTypeDefinition.apiVersions | ? { -not ($_ -match "preview") }
-        previewApiVersions = $resourceTypeDefinition.apiVersions | ? { $_ -match "preview" }
-        defaultApiVersion = function f() {
-            if ($null -eq $this._defaultApiVersion)
+        releaseApiVersions = $releaseApiVersions
+        previewApiVersions = $previewApiVersions
+        defaultApiVersion = $({
+            if ($null -eq $defaultApiVersion)
             {
-                if ($this.releaseApiVersions.Count -gt 0)
+                if ($releaseApiVersions.Count -gt 0)
                 {
-                    return $this.releaseApiVersions[-1]
+                    return $releaseApiVersions[-1]
                 }
                 else 
                 {
-                    return $this.previewApiVersions[-1]
+                    return $previewApiVersions[-1]
                 }
             }
             else 
             {
-                return $this._defaultApiVersion
+                return $defaultApiVersion
             }
-        }
+        })
     }
 }
 

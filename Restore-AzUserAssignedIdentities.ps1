@@ -44,11 +44,21 @@ function Restore-AzSingleIdentity($identity)
 
 function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
 {
-    $patchBody = [PSCustomObject]@{
-        location = $Resource.location
-        identity = [PSCustomObject]@{
-            type = $Resource.identityType
-            userAssignedIdentities = $Resource.userAssignedIdentities
+    if ($Resource.identityType -match "UserAssigned")
+    {
+        $patchBody = [PSCustomObject]@{
+            identity = [PSCustomObject]@{
+                type = $Resource.identityType
+                userAssignedIdentities = $Resource.userAssignedIdentities
+            }
+        }
+    }
+    else 
+    {
+        $patchBody = [PSCustomObject]@{
+            identity = [PSCustomObject]@{
+                type = $Resource.identityType
+            }
         }
     }
 
@@ -80,8 +90,7 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
             $patchBody.identity.type = Add-SystemAssignedIdentityType -IdentityType $patchBody.identity.type
             $response = Invoke-AzRestMethod -Method PATCH -Path $path -Payload $(ConvertTo-Json $patchBody -Depth 3)
     
-            $newSa = Get-AzSystemAssignedIdentity -Scope $Resource.id
-            return ConvertTo-IdentityModel -AzIdentity $newSa
+            return Get-AzSystemAssignedIdentity -Scope $Resource.id | ConvertTo-IdentityModel
         }
         elseif ($tempUserAssigned)
         {
