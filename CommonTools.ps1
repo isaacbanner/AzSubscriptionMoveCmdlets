@@ -57,7 +57,7 @@ function ConvertTo-Hashtable ([PsCustomObject] $PsObject)
     }
 }
 
-function ConvertTo-ResourceModel([PsCustomObject] $argResource)
+function ConvertTo-ResourceModel([Parameter(ValueFromPipeline=$true)] [PsCustomObject] $argResource)
 {
     $resourceProvider, $resourceType = Split-ResourceProviderAndType $argResource.type
 
@@ -73,7 +73,7 @@ function ConvertTo-ResourceModel([PsCustomObject] $argResource)
     }
 }
 
-function ConvertTo-IdentityModel([PsCustomObject] $AzIdentity)
+function ConvertTo-IdentityModel([Parameter(ValueFromPipeline=$true)] [PsCustomObject] $AzIdentity)
 {
     return [PSCustomObject]@{
         clientId = $AzIdentity.clientId

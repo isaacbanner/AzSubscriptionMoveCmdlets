@@ -29,11 +29,14 @@ function Get-AllAzureKeyVaults () {
 
 function Backup-AzIdentityAndRbac([string] $Subscription, [string] $TenantId)
 {
+    Write-Progress -Activity "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
     {
-        Write-Output "boo"
+        # TODO: Error behavior
+        Write-Error "Ahhhh!"
+        return
     }
 
     # backup identities, resources, and FIC
