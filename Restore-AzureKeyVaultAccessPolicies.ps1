@@ -47,6 +47,6 @@ function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
         }
     }
 
-    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $patchBody -Depth 5)
+    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
 }
 
