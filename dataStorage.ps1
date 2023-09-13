@@ -60,14 +60,14 @@ function Set-MigrationData {
     
     end {
         if ($Config.LocalFolderName) {
-            ConvertTo-Json $objects -Compress > "$($Config.LocalFolderName)\migrationData\$Identifier.json"
+            ConvertTo-Json $objects -Compress -Depth 10 > "$($Config.LocalFolderName)\migrationData\$Identifier.json"
         }
 
         if ($storageAccount) {
             try {
                 $tempFile = New-TemporaryFile
                 Write-Debug "Writing $Identifier data to $tempFile"
-                ConvertTo-Json $objects -Compress > $tempFile
+                ConvertTo-Json $objects -Compress -Depth 10 > $tempFile
 
                 Write-Debug "Uploading $Identifier to migration data container"
                 Set-AzStorageBlobContent -File $tempFile -Container "migrationdata" -Blob $Identifier -Context $storageAccount.Context -StandardBlobTier "Hot" -Force:$Force | Out-Null
