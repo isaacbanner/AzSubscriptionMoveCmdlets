@@ -68,6 +68,7 @@ function ConvertTo-ResourceModel([Parameter(ValueFromPipeline=$true)] [PsCustomO
         resourceProvider = $resourceProvider
         resourceType = $resourceType
         identityType = $argResource.identity.type
+        objectId = $argResource.identity.principalId
         userAssignedIdentities = ConvertTo-Hashtable -PsObject $argResource.identity.userAssignedIdentities
         resourceGroupName = $argResource.resourceGroup
     }
