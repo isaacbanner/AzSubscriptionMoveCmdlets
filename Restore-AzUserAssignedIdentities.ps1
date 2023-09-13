@@ -102,7 +102,5 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
 }
 
 <#
-$context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
-
-
+    $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 #>

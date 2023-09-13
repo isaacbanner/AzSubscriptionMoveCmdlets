@@ -15,7 +15,7 @@
 $resourceGroupPattern = "/resourceGroups/([^/]+)/"
 $uaIdentityPattern = "/userAssignedIdentities/([^/]+)/"
 
-function Restore-AzSingleFederatedCredentialIdentity($federatedIdentityCredential)
+function Restore-AzSingleFederatedCredentialIdentity([PsCustomObject] $federatedIdentityCredential)
 {
     if ($federatedIdentityCredential.id -match $resourceGroupPattern -and $federatedIdentityCredential.id -match $uaIdentityPattern) {
         $resourceGroupName = $Matches[1]

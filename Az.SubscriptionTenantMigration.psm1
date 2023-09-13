@@ -44,14 +44,50 @@ function Backup-AzIdentityAndRbac([string] $Subscription, [string] $TenantId)
     # backup role assignments and RBAC
     $identityPrincipalOids = $identities | % { $_.objectId }
     $roleAssignments = Get-RoleAssignmentsForPrincipals -PrincipalIds $identityPrincipalOids -SubscriptionId $Subscription
-    $roleDefinitionIds = $roleAssignments.RoleDefinitionId | Select-Object -Unique
-    $roleDefinitions = Get-CustomRoleDefinitionsForRoleAssignments $roleDefinitionIds 
+    
+    if ($roleAssignments.Length -gt 0)
+    {
+        $roleDefinitionIds = $roleAssignments.RoleDefinitionId | Select-Object -Unique
+        $roleDefinitions = Get-CustomRoleDefinitionsForRoleAssignments -roleDefinitionIds $roleDefinitionIds 
+    }
+    else 
+    {
+        $roleDefinitions = @()
+    }
 
-    $kvAccessPolicies = Get-AllAzureKeyVaults
+    # backup AKV configuration
+    $keyVaults = Get-AllAzureKeyVaults
+
+    return [PSCustomObject]@{
+        Identities = $identities
+        Resources = $resources
+        Fics = $fic
+        RoleAssignments = $roleAssignments
+        RoleDefinitions = $roleDefinitions
+        KeyVaults = $keyVaults
+    }
 }
 
-function Restore-AzIdentityAndRbac()
+function Restore-AzIdentityAndRbac(
+    [string] $Subscription, 
+    [string] $TenantId, 
+    [PsCustomObject[]] $Identities, 
+    [PsCustomObject[]] $Resources,
+    [PsCustomObject[]] $Fics,
+    [PsCustomObject[]] $RoleAssignments,
+    [PsCustomObject[]] $RoleDefinitions,
+    [PsCustomObject[]] $KeyVaults)
 {
+    $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
+
+    if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
+    {
+        Write-Output "boo"
+    }
+
+    # Recreate custom role definitions
+    Add-RoleDefinitions -NewScope /subscriptions/ff945b8d-441a-41ef-a9db-7bd5fcc99978 -RoleDefinitions $roleDefinitions
+
     # Create temp identity for UA-only resources
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
     $identityName = "TempWorkflowIdentity" + [Guid]::NewGuid().ToString()
@@ -61,34 +97,38 @@ function Restore-AzIdentityAndRbac()
     $userAssignedMap = @{}
     $systemAssignedMap = @{}
 
+    # Delete and recreate UA identities
     $Identities | % {
         if ($_.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities")
         {
             $newUa = Restore-AzSingleIdentity -Identity $_
-            $userAssignedMap[$_.id] = $newUa
+            $userAssignedMap[$_.objectId] = $newUa.objectId
         }
     }
 
-    # TODO: Redo role assignments and access policies for new UA identities
+    # Restore role assignments on UA identities
+    Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedMap
 
+    # Restore FIC on new UA objects
+    $Fics | % {
+        Restore-AzSingleFederatedCredentialIdentity -federatedIdentityCredential $_
+    }
+
+    # Restore SA identities and UA identity assignments
     $Resources | % {
         $newSa = Restore-AzIdentityAssignments -Resource $_ -TempUaIdentityId $tempUaIdentity.Id
         if ($_.identityType -match "SystemAssigned")
         {
-            $systemAssignedMap[$_.id] = $newSa
+            $systemAssignedMap[$_.objectId] = $newSa.objectId
         }
     }
 
-    # TODO: Redo role assignments and access policies for new SA identities
+    # Restore role assignments on SA identities
+    Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $systemAssignedMap
 
     # Clean up temp UA identity
     Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
-    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
-
-    return [PSCustomObject]@{
-        uaMap = $userAssignedMap
-        saMap = $systemAssignedMap
-    }
+    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Forces
 }
 
-# Export-ModuleMember -Function @()
+# Export-ModuleMember -Function @("Backup-AzIdentityAndRbac"; "Restore-AzIdentityAndRbac")

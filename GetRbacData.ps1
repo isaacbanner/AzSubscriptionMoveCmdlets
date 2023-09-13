@@ -6,7 +6,7 @@ function Get-RoleAssignmentsForPrincipals {
         [string]$SubscriptionId
     )
 
-    $roleAssignments = Get-AzRoleAssignment -Scope "/subscriptions/$SubscriptionId" | Where-Object { $PrincipalIds -contains $_.ObjectId } | Where-Object { $_.Scope -contains "/subscriptions/$SubscriptionId"}
+    $roleAssignments = Get-AzRoleAssignment -Scope "/subscriptions/$SubscriptionId" | Where-Object { $PrincipalIds -contains $_.ObjectId } | Where-Object { $_.Scope -match "/subscriptions/$SubscriptionId"}
     
     return $roleAssignments;
 }
@@ -16,7 +16,6 @@ function Get-CustomRoleDefinitionsForRoleAssignments {
         [Parameter(Mandatory=$true)]
         [string[]]$roleDefinitionIds
     )
-
     $customRoleDefinitions = @()
 
     foreach ($roleDefinitionId in $roleDefinitionIds) {
@@ -40,27 +39,26 @@ function Add-RoleAssignments {
     )
 
     foreach ($roleAssignment in $RoleAssignments) {
-    $principalId = $roleAssignment.ObjectId;
+        $principalId = $roleAssignment.ObjectId;
 
-    if ($PrincipalIdMapping.ContainsKey($principalId)) {
-        $newPrincipalId = $PrincipalIdMapping[$principalId];
-        
-        Write-Output "Found mapping from PrincipalId:" $principalId " to principalId: " $newPrincipalId "Scope:" $roleAssignment.Scope; 
+        if ($PrincipalIdMapping.ContainsKey($principalId)) {
+            $newPrincipalId = $PrincipalIdMapping[$principalId];
+            
+            Write-Output "Found mapping from PrincipalId:" $principalId " to principalId: " $newPrincipalId "Scope:" $roleAssignment.Scope; 
 
-        $existingRA = Get-AzRoleAssignment -ObjectId $newPrincipalId -Scope $roleAssignment.Scope -RoleDefinitionName $roleAssignment.RoleDefinitionName;
+            $existingRA = Get-AzRoleAssignment -ObjectId $newPrincipalId -Scope $roleAssignment.Scope -RoleDefinitionName $roleAssignment.RoleDefinitionName;
 
-        if ($existingRA.Count -eq 0)
-        {
-            Write-Output "Adding Role Assignment for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
-            New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion
-        }
-        else 
-        {
-            Write-Output "RA already exists for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
+            if ($existingRA.Count -eq 0)
+            {
+                Write-Output "Adding Role Assignment for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
+                New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion
+            }
+            else 
+            {
+                Write-Output "RA already exists for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
+            }
         }
     }
-}
-
 }
 
 

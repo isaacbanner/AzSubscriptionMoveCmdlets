@@ -1,3 +1,4 @@
+
 function Test-SubscriptionOwnership {
     param (
         [Parameter()]
