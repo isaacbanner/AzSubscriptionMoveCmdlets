@@ -12,7 +12,7 @@ function Get-FederatedIdentityCredentialsForUserAssignedIdentities([PsCustomObje
             $federatedIdentityCredential = Get-AzFederatedIdentityCredentials -IdentityName $identity.name -ResourceGroupName $identity.resourceGroupName
 
             if ($federatedIdentityCredential) {
-                $federatedIdentityCredentials += $federatedIdentityCredential
+                $federatedIdentityCredentials += ConvertTo-FederatedIdentityCredentialModel -Identity $identity -Fic $federatedIdentityCredential
             }  
         }
     }
