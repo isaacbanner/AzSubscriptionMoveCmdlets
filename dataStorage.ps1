@@ -22,8 +22,8 @@ function Set-MigrationData {
         if ($Config.LocalFolderName) {
             $folderName = "$($Config.LocalFolderName)\migrationData"
 
-            if ((-not $Force) -and (Test-Path -Path $folderName)) {
-                $message = "$folderName already exists, use -Force to overwrite existing data."
+            if ((-not $Force) -and (Test-Path -Path "$folderName\$Identifier.json")) {
+                $message = "$folderName\$Identifier.json already exists, use -Force to overwrite existing data."
                 Write-Error $message
                 throw $message
             }
