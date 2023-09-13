@@ -44,7 +44,7 @@ function Get-AllIdentitiesAtSubscriptionScope ([string] $Subscription)
     return $allIdentities
 }
 
-function Split-ResourceProviderAndType($providerNamespaceAndType)
+function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
 {
     $firstWhack = $providerNamespaceAndType.IndexOf('/')
     $namespace = $providerNamespaceAndType.Substring(0, $firstWhack)
@@ -53,7 +53,7 @@ function Split-ResourceProviderAndType($providerNamespaceAndType)
     return @($namespace, $fullResourceType)
 }
 
-function Get-AllIdentityEnabledResources ($Subscription)
+function Get-AllIdentityEnabledResources ([string] $Subscription)
 {
     $query = $argResourceQuery -f $Subscription
     $ArgResources = Search-AzGraph -Query $query
