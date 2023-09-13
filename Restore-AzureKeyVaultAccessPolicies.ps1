@@ -37,12 +37,12 @@ function Update-AkvAcessPolicy ($tenantId, $akv, $PrincipalIdMapping) {
             $requestBody.properties.accessPolicies.Add(
                 [PSCustomObject]@{
                     objectId = $newObjId
+                    tenantId = $tenantId
                     permissions = [PSCustomObject]@{
                         keys = $accessPolicy.PermissionsToKeys
                         secrets = $accessPolicy.PermissionsToSecrets
                         certificates = $accessPolicy.PermissionsToCertificates
                         storage = $accessPolicy.PermissionsToStorage
-                        tenantId = $tenantId
                     }
                 }
             )
