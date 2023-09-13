@@ -34,26 +34,22 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
     $releaseApiVersions = $resourceTypeDefinition.apiVersions | ? { -not ($_ -match "preview") }
     $previewApiVersions = $resourceTypeDefinition.apiVersions | ? { $_ -match "preview" }
 
+    if ($null -eq $defaultApiVersion)
+    {
+        if ($releaseApiVersions.Count -gt 0)
+        {
+            $defaultApiVersion = $releaseApiVersions[-1]
+        }
+        else 
+        {
+            $defaultApiVersion = $previewApiVersions[-1]
+        }
+    }
+
     return [PSCustomObject]@{
         releaseApiVersions = $releaseApiVersions
         previewApiVersions = $previewApiVersions
-        defaultApiVersion = $({
-            if ($null -eq $defaultApiVersion)
-            {
-                if ($releaseApiVersions.Count -gt 0)
-                {
-                    return $releaseApiVersions[-1]
-                }
-                else 
-                {
-                    return $previewApiVersions[-1]
-                }
-            }
-            else 
-            {
-                return $defaultApiVersion
-            }
-        })
+        defaultApiVersion = $defaultApiVersion
     }
 }
 
