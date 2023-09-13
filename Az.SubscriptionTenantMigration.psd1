@@ -51,7 +51,7 @@ Copyright = '(c) Microsoft. All rights reserved.'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(Az.Accounts; Az.ManagedServiceIdentity; Az.ResourceGraph; Az.Resources;)
+RequiredModules = @(Az.Accounts; Az.KeyVault; Az.ManagedServiceIdentity; Az.ResourceGraph; Az.Resources;)
 
 # Assemblies that must be loaded prior to importing this module
 RequiredAssemblies = @(System.GUID)

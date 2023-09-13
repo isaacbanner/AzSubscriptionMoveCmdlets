@@ -62,4 +62,18 @@ function Get-AllIdentityEnabledResources ([string] $Subscription)
     }
 }
 
+function Get-AllAzureKeyVaults () {
+    $allAkvs = Get-AzKeyVault
+    $resultAkvList = New-Object System.Collections.ArrayList
+    # Write-Output "Start downloading Azure KeyVault information ..."
+
+    foreach ($akv in $allAkvs) {
+        $kv = Get-AzKeyVault -ResourceGroupName $akv.ResourceGroupName -VaultName $akv.VaultName
+        $resultAkvList.Add($kv) | out-null
+        # Write-Output ("Finished downloading {0} / {1}" -f $resultAkvList.Count, $allAkvs.Count)
+    }
+
+    return $resultAkvList
+}
+
 # Export-ModuleMember -Function @()
