@@ -12,7 +12,7 @@ function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
     return @($namespace, $fullResourceType)
 }
 
-function Split-ResourceGroupNameAndIdentityName([string] id)
+function Split-ResourceGroupNameAndIdentityName([string] $id)
 {
     # Define regular expressions to match resource group name, and ua identity name
     $resourceGroupPattern = "/resourceGroups/([^/]+)/"
