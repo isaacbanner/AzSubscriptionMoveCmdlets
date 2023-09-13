@@ -20,7 +20,7 @@ function Set-MigrationData {
     begin {
         Write-Debug "Writing migration data for $Identifier"
         if ($Config.LocalFolderName) {
-            $folderName = "$($Config.LocalFolderName)/migrationData"
+            $folderName = "$($Config.LocalFolderName)\migrationData"
 
             if ((-not $Force) -and (Test-Path -Path $folderName)) {
                 $message = "$folderName already exists, use -Force to overwrite existing data."
@@ -60,7 +60,7 @@ function Set-MigrationData {
     
     end {
         if ($Config.LocalFolderName) {
-            ConvertTo-Json $objects -Compress > "$($Config.LocalFolderName)/migrationData/$Identifier.json"
+            ConvertTo-Json $objects -Compress > "$($Config.LocalFolderName)\migrationData\$Identifier.json"
         }
 
         if ($storageAccount) {
@@ -92,7 +92,7 @@ function Get-MigrationData {
     )
     Write-Debug "Reading migration data for $Identifier"
     if ($Config.LocalFolderName) {
-        $filePath = "$($Config.LocalFolderName)/migrationData/$Identifier.json"
+        $filePath = "$($Config.LocalFolderName)\migrationData\$Identifier.json"
         if (-not (Test-Path $filePath)) {
             $message = "$filePath does not exist."
             Write-Error $message
