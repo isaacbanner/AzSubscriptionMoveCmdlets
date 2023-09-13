@@ -12,6 +12,21 @@ function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
     return @($namespace, $fullResourceType)
 }
 
+function Split-ResourceGroupNameAndIdentityName([string] $id)
+{
+    # Define regular expressions to match resource group name, and ua identity name
+    $resourceGroupPattern = "/resourceGroups/([^/]+)/"
+    $uaIdentityPattern = "/userAssignedIdentities/([^/]+)/"
+    if ($id -match $resourceGroupPattern -and $id -match $uaIdentityPattern) {
+        $resourceGroupName = $Matches[1]
+        $identityName = $Matches[2]
+        return @($resourceGroupName, $identityName)
+    }
+    else {
+        Write-Host "Not able to retrieve the UA Identity Name and Resource Group"
+    }
+}
+
 function Get-UserContext ([string] $Subscription, [string] $TenantId) {  
     $context = Get-AzContext
 
@@ -88,11 +103,15 @@ function ConvertTo-IdentityModel([PsCustomObject] $AzIdentity)
 
 function ConvertTo-FederatedIdentityCredentialModel([PsCustomObject] $Fic)
 {
+    $resourceGroupName, $identityName = Split-ResourceGroupNameAndIdentityName $Fic.id
+
     return [PSCustomObject]@{
         name = $Fic.name
         issuer = $Fic.issuer  
         subject = $Fic.subject
         audience = $Fic.audience
         id = $Fic.id
+        identityName = $identityName
+        resourceGroupName = $resourceGroupName
     }
 }

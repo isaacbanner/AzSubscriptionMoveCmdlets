@@ -11,19 +11,10 @@
     The  FIC to be restored.
 #>
 
-# Define regular expressions to match resource group name, and ua identity name
-$resourceGroupPattern = "/resourceGroups/([^/]+)/"
-$uaIdentityPattern = "/userAssignedIdentities/([^/]+)/"
 
 function Restore-AzSingleFederatedCredentialIdentity([PsCustomObject] $federatedIdentityCredential)
 {
-    if ($federatedIdentityCredential.id -match $resourceGroupPattern -and $federatedIdentityCredential.id -match $uaIdentityPattern) {
-        $resourceGroupName = $Matches[1]
-        $identityName = $Matches[2]
-        $modifiedIssuer =   $federatedIdentityCredential.issuer -replace $OldTenantId, $NewTenantId
-        return New-AzFederatedIdentityCredentials -IdentityName $identityName -Name $federatedIdentityCredential.name -ResourceGroupName $resourceGroupName -SubscriptionId $Subscription -Audience $federatedIdentityCredential.audience -Issuer $modifiedIssuer -Subject $federatedIdentityCredential.subject 
-    } else {
-        Write-Host "Not able to retrieve the UA Identity Name and Resource Group"
-    }
-    
+    $modifiedIssuer =   $federatedIdentityCredential.issuer -replace $OldTenantId, $NewTenantId
+    $newFIC = New-AzFederatedIdentityCredentials -IdentityName $federatedIdentityCredential.identityName -Name $federatedIdentityCredential.name -ResourceGroupName $federatedIdentityCredential.resourceGroupName -Audience $federatedIdentityCredential.audience -Issuer $modifiedIssuer -Subject $federatedIdentityCredential.subject 
+    return ConvertTo-FederatedIdentityCredentialModel -Fic $newFIC
 }
