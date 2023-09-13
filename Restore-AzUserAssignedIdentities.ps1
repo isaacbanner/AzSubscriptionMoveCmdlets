@@ -44,9 +44,6 @@ function Restore-AzSingleIdentity($identity)
 
 function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
 {
-    # For a resource, attempt a PATCH on the identities.
-    # If that fails, do a GET on the resource, update the body, and PUT the update
-
     $patchBody = [PSCustomObject]@{
         location = $Resource.location
         identity = [PSCustomObject]@{
@@ -73,6 +70,7 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
         $patchBody.identity.userAssignedIdentities[$TempUaIdentityId] = [PSCustomObject]@{}
     }
     
+    # For a resource, attempt a PATCH on the identities.
     $response = Invoke-AzRestMethod -Method PATCH -Path $path -Payload $(ConvertTo-Json $patchBody -Depth 3)
 
     if ($response.StatusCode -lt 300)
@@ -94,6 +92,7 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
     elseif ($response.StatusCode -eq 405)
     {
         # TODO: Handle HttpMethodIsNotSupported
+        # If that fails, do a GET on the resource, update the body, and PUT the update
     }
     else 
     {
