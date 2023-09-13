@@ -139,12 +139,12 @@ function Restore-AzIdentityAndRbac(
 
     if ($storageConfig)
     {
-        $Identities = Get-MigrationData -Config $storageConfig -Identifier "identities"
-        $Resources = Get-MigrationData -Config $storageConfig -Identifier "resources"
-        $Fics = Get-MigrationData -Config $storageConfig -Identifier "fics"
-        $RoleAssignments = Get-MigrationData -Config $storageConfig -Identifier "roleAssignments"
-        $RoleDefinitions = Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions"
-        $KeyVaults = Get-MigrationData -Config $storageConfig -Identifier "keyVaults"
+        $Identities = @(Get-MigrationData -Config $storageConfig -Identifier "identities")
+        $Resources = @(Get-MigrationData -Config $storageConfig -Identifier "resources")
+        $Fics = @(Get-MigrationData -Config $storageConfig -Identifier "fics")
+        $RoleAssignments = @(Get-MigrationData -Config $storageConfig -Identifier "roleAssignments")
+        $RoleDefinitions = @(Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions")
+        $KeyVaults = @(Get-MigrationData -Config $storageConfig -Identifier "keyVaults")
     }
 
     # Recreate custom role definitions
