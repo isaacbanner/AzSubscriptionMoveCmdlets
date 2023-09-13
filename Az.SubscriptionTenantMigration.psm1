@@ -27,7 +27,14 @@ function Get-AllAzureKeyVaults () {
     return $resultAkvList
 }
 
-function Backup-AzIdentityAndRbac([string] $Subscription, [string] $TenantId)
+function Backup-AzIdentityAndRbac(
+    [Parameter(Mandatory=$true)][string] $Subscription,
+    [Parameter(Mandatory=$true)][string] $TenantId,
+    [Parameter(Mandatory=$false)][string] $LocalDataFolder,
+    [Parameter(Mandatory=$false)][string] $AzStorageResourceGroup,
+    [Parameter(Mandatory=$false)][string] $AzStorageAccountName,
+    [switch]$Force
+)
 {
     Write-Progress -Activity "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
@@ -60,6 +67,30 @@ function Backup-AzIdentityAndRbac([string] $Subscription, [string] $TenantId)
 
     # backup AKV configuration
     $keyVaults = Get-AllAzureKeyVaults
+
+    if ($LocalDataFolder)
+    {
+        $storageConfig = [StorageConfig]@{
+            LocalFolderName = $LocalDataFolder
+        }
+    }
+    if ($AzStorageResourceGroup -and $AzStorageAccountName)
+    {
+        $storageConfig = [StorageConfig]@{
+            StorageAccountResourceGroup = $AzStorageResourceGroup
+            StorageAccountName = $AzStorageAccountName
+        }
+    }
+
+    if ($storageConfig)
+    {
+        $identities | Set-MigrationData -Config $storageConfig -Identifier "identities" -Force:$Force
+        $resources | Set-MigrationData -Config $storageConfig -Identifier "resources" -Force:$Force
+        $fic | Set-MigrationData -Config $storageConfig -Identifier "fics" -Force:$Force
+        $roleAssignments | Set-MigrationData -Config $storageConfig -Identifier "roleAssignments" -Force:$Force
+        $roleDefinitions | Set-MigrationData -Config $storageConfig -Identifier "roleDefinitions" -Force:$Force
+        $keyVaults | Set-MigrationData -Config $storageConfig -Identifier "keyVaults" -Force:$Force
+    }
 
     return [PSCustomObject]@{
         Identities = $identities
