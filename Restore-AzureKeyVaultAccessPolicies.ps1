@@ -13,8 +13,8 @@ function Restore-AllAzureKeyVaults ($allAkvs, $PrincipalIdMapping) {
 }
 
 function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
-    # Appending accessPolicies resource type, operation kind (replace) and API version to akv resource id
-    $path = $akv.ResourceId + "/accessPolicies/replace?api-version=2022-07-01"
+    # Appending accessPolicies resource type, operation kind (add) and API version to akv resource id
+    $path = $akv.ResourceId + "/accessPolicies/add?api-version=2022-07-01"
 
     $requestBody = [PSCustomObject]@{
         id = $akv.ResourceId + "/accessPolicies"
