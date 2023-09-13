@@ -3,6 +3,15 @@
     PS Module with multiple Az Rest Method utilities
 #>
 
+function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
+{
+    $firstWhack = $providerNamespaceAndType.IndexOf('/')
+    $namespace = $providerNamespaceAndType.Substring(0, $firstWhack)
+    $fullResourceType = $providerNamespaceAndType.Substring($firstWhack + 1)
+
+    return @($namespace, $fullResourceType)
+}
+
 function Get-UserContext ([string] $Subscription, [string] $TenantId) {  
     $context = Get-AzContext
 

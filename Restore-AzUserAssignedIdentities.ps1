@@ -11,28 +11,6 @@
     The resources in the subscription, potentially to which the identities are assigned.
 #>
 
-[CmdletBinding()]
-Param(
-    [Parameter(Mandatory=$True)]
-    [string]
-    $Subscription,
-    
-    [Parameter(Mandatory=$True)]
-    [string]
-    $TenantId,
-
-    [Parameter(Mandatory=$True)]
-    [psobject[]]
-    $Identities,
-
-    [Parameter(Mandatory=$True)]
-    [psobject[]]
-    $Resources
-)
-
-
-Import-Module .\AzRestMethodTools
-
 function Remove-SystemAssignedIdentityType([string] $IdentityType)
 {
     if ($IdentityType -match "UserAssigned")
@@ -123,42 +101,8 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
     }
 }
 
+<#
 $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
-# Create temp identity for UA-only resources
-$rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
-$identityName = "TempWorkflowIdentity" + [Guid]::NewGuid().ToString()
-$tempRg = New-AzResourceGroup -Name $rgName -Location "westus"
-$tempUaIdentity = New-AzUserAssignedIdentity -ResourceGroupName $rgName -Name $identityName -Location "westus"
 
-$userAssignedMap = @{}
-$systemAssignedMap = @{}
-
-$Identities | % {
-    if ($_.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities")
-    {
-        $newUa = Restore-AzSingleIdentity -Identity $_
-        $userAssignedMap[$_.id] = $newUa
-    }
-}
-
-# TODO: Redo role assignments and access policies for new UA identities
-
-$Resources | % {
-    $newSa = Restore-AzIdentityAssignments -Resource $_ -TempUaIdentityId $tempUaIdentity.Id
-    if ($_.identityType -match "SystemAssigned")
-    {
-        $systemAssignedMap[$_.id] = $newSa
-    }
-}
-
-# TODO: Redo role assignments and access policies for new SA identities
-
-# Clean up temp UA identity
-Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
-Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
-
-return [PSCustomObject]@{
-    uaMap = $userAssignedMap
-    saMap = $systemAssignedMap
-}
+#>

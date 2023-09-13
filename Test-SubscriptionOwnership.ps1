@@ -5,7 +5,7 @@ function Test-SubscriptionOwnership {
     )
     if (-not $SubscriptionId) {
         Write-Debug "No subscription specified, testing subscription for current Azure context"
-        $SubscriptionId = (Get-AzContext).Subscription.Id
+        $SubscriptionId = (Get-UserContext).Subscription.Id
     }
 
     Write-Debug "Testing subscription ownership for $SubscriptionId"

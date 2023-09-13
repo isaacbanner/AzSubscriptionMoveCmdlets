@@ -4,63 +4,14 @@
     Includes tooling to backup identity and RBAC configuration then restore that configuration in the new tenant.
 #>
 
-Import-Module .\AzRestMethodTools
-
-$argResourceQuery = 'Resources | where subscriptionId =~ "{0}" | where isnotempty(identity) | where identity.["type"] !has "None"'
-$argIdentityQuery = 'Resources | where subscriptionId =~ "{0}" | where isnotempty(identity) | where identity.["type"] has "SystemAssigned" | project id'
-
-function Get-FederatedIdentityCredentialsForUserAssignedIdentities([PsCustomObject[]] $Identities)
-{
-    # Initialize an array to store the Federated Identity Credentials
-    $federatedIdentityCredentials = @()
-
-    foreach ($identity in $Identities) {
-        if ($identity.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities") {
-            $federatedIdentityCredential = Get-AzFederatedIdentityCredentials -IdentityName $identity.name -ResourceGroupName $identity.resourceGroupName
-
-            if ($federatedIdentityCredential) {
-                $federatedIdentityCredentials += $federatedIdentityCredential
-            }  
-        }
-    }
-
-    return $federatedIdentityCredentials
-}
-
-function Get-AllSystemAssignedIdentitiesAtSubscriptionScope ([string] $Subscription)
-{
-    $query = $argIdentityQuery -f $Subscription
-    $ArgIdentities = Search-AzGraph -Query $query
-    return $ArgIdentities | % {Get-AzSystemAssignedIdentity -Scope $_.id} | % {ConvertTo-IdentityModel -AzIdentity $_}
-}
-
-function Get-AllIdentitiesAtSubscriptionScope ([string] $Subscription)
-{
-    $userAssigned = @(Get-AzUserAssignedIdentity -SubscriptionId $Subscription | % {ConvertTo-IdentityModel -AzIdentity $_})
-
-    $systemAssigned = @(Get-AllSystemAssignedIdentitiesAtSubscriptionScope -Subscription $Subscription)
-    $allIdentities = $systemAssigned + $userAssigned
-
-    return $allIdentities
-}
-
-function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
-{
-    $firstWhack = $providerNamespaceAndType.IndexOf('/')
-    $namespace = $providerNamespaceAndType.Substring(0, $firstWhack)
-    $fullResourceType = $providerNamespaceAndType.Substring($firstWhack + 1)
-
-    return @($namespace, $fullResourceType)
-}
-
-function Get-AllIdentityEnabledResources ([string] $Subscription)
-{
-    $query = $argResourceQuery -f $Subscription
-    $ArgResources = Search-AzGraph -Query $query
-    return $ArgResources | % {
-        ConvertTo-ResourceModel $_
-    }
-}
+. $PSScriptRoot\CommonTools.ps1
+. $PSScriptRoot\GetRbacData.ps1
+. $PSScriptRoot\IdentityBackupFunctions.ps1
+. $PSScriptRoot\dataStorage.ps1
+. $PSScriptRoot\Restore-AzFederatedIdentityCredentials.ps1
+. $PSScriptRoot\Restore-AzureKeyVaultAccessPolicies.ps1
+. $PSScriptRoot\Restore-AzUserAssignedIdentities.ps1
+. $PSScriptRoot\Test-SubscriptionOwnership.ps1
 
 function Get-AllAzureKeyVaults () {
     $allAkvs = Get-AzKeyVault
@@ -74,6 +25,70 @@ function Get-AllAzureKeyVaults () {
     }
 
     return $resultAkvList
+}
+
+function Backup-AzIdentityAndRbac([string] $Subscription, [string] $TenantId)
+{
+    $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
+
+    if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
+    {
+        Write-Output "boo"
+    }
+
+    # backup identities, resources, and FIC
+    $identities = Get-AllIdentitiesAtSubscriptionScope -Subscription $Subscription
+    $resources = Get-AllIdentityEnabledResources -Subscription $Subscription
+    $fic = Get-FederatedIdentityCredentialsForUserAssignedIdentities -Identities $identities
+    
+    # backup role assignments and RBAC
+    $identityPrincipalOids = $identities | % { $_.objectId }
+    $roleAssignments = Get-RoleAssignmentsForPrincipals -PrincipalIds $identityPrincipalOids -SubscriptionId $Subscription
+    $roleDefinitionIds = $roleAssignments.RoleDefinitionId | Select-Object -Unique
+    $roleDefinitions = Get-CustomRoleDefinitionsForRoleAssignments $roleDefinitionIds 
+
+    $kvAccessPolicies = Get-AllAzureKeyVaults
+}
+
+function Restore-AzIdentityAndRbac()
+{
+    # Create temp identity for UA-only resources
+    $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
+    $identityName = "TempWorkflowIdentity" + [Guid]::NewGuid().ToString()
+    $tempRg = New-AzResourceGroup -Name $rgName -Location "westus"
+    $tempUaIdentity = New-AzUserAssignedIdentity -ResourceGroupName $rgName -Name $identityName -Location "westus"
+
+    $userAssignedMap = @{}
+    $systemAssignedMap = @{}
+
+    $Identities | % {
+        if ($_.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities")
+        {
+            $newUa = Restore-AzSingleIdentity -Identity $_
+            $userAssignedMap[$_.id] = $newUa
+        }
+    }
+
+    # TODO: Redo role assignments and access policies for new UA identities
+
+    $Resources | % {
+        $newSa = Restore-AzIdentityAssignments -Resource $_ -TempUaIdentityId $tempUaIdentity.Id
+        if ($_.identityType -match "SystemAssigned")
+        {
+            $systemAssignedMap[$_.id] = $newSa
+        }
+    }
+
+    # TODO: Redo role assignments and access policies for new SA identities
+
+    # Clean up temp UA identity
+    Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
+    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
+
+    return [PSCustomObject]@{
+        uaMap = $userAssignedMap
+        saMap = $systemAssignedMap
+    }
 }
 
 # Export-ModuleMember -Function @()

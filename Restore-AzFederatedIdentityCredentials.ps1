@@ -11,25 +11,6 @@
     The  FIC to be restored.
 #>
 
-[CmdletBinding()]
-Param(
-    [Parameter(Mandatory=$True)]
-    [string]
-    $Subscription,
-
-    [Parameter(Mandatory=$True)]
-    [string]
-    $OldTenantId,
-
-    [Parameter(Mandatory=$True)]
-    [string]
-    $NewTenantId,
-
-    [Parameter(Mandatory=$True)]
-    [psobject[]]
-    $FederatedIdentityCredentials
-)
-
 # Define regular expressions to match resource group name, and ua identity name
 $resourceGroupPattern = "/resourceGroups/([^/]+)/"
 $uaIdentityPattern = "/userAssignedIdentities/([^/]+)/"
@@ -45,9 +26,4 @@ function Restore-AzSingleFederatedCredentialIdentity($federatedIdentityCredentia
         Write-Host "Not able to retrieve the UA Identity Name and Resource Group"
     }
     
-}
-
-
-$FederatedIdentityCredentials | % {
-    Restore-AzSingleFederatedCredentialIdentity($_)
 }

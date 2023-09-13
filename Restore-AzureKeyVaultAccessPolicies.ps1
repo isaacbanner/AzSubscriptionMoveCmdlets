@@ -1,5 +1,3 @@
-Import-Module Az.KeyVault
-
 function Restore-AllAzureKeyVaults ($allAkvs) {
     # $akvOutputFilePath = ".\akvInfo.json"
     # $allAkvs = (Get-Content $akvOutputFilePath -Raw) | ConvertFrom-Json
@@ -46,4 +44,3 @@ function Update-AkvAcessPolicy ($akv) {
     Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $patchBody -Depth 5)
 }
 
-Restore-AllAzureKeyVaults
