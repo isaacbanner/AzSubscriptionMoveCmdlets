@@ -52,7 +52,7 @@ function Add-RoleAssignments {
 
             if ($existingRA.Count -eq 0)
             {
-                Write-Output "Adding Role Assignment for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
+                Write-Output "Adding Role Assignment for Principal: $($newPrincipalId), Scope: $($roleAssignment.Scope), RoleDefinitionName: $($roleAssignment.RoleDefinitionName)";
 
                 if ($roleAssignment.Condition -and $roleAssignment.ConditionVersion)
                 {
