@@ -148,7 +148,7 @@ function Restore-AzIdentityAndRbac(
     }
 
     # Recreate custom role definitions
-    Add-RoleDefinitions -NewScope /subscriptions/ff945b8d-441a-41ef-a9db-7bd5fcc99978 -RoleDefinitions $roleDefinitions
+    Add-RoleDefinitions -NewScope "/subscriptions/$Subscription" -RoleDefinitions $roleDefinitions
 
     # Create temp identity for UA-only resources
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()

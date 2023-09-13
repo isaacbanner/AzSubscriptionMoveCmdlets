@@ -113,7 +113,7 @@ function Add-RoleDefinitions {
             {
                 $existingRole.AssignableScopes.Add($AssignableScope);
                 Write-Output "Found role definition with same properties but missing assignable scope"
-                New-AzRoleDefinition -InputObject $item
+                New-AzRoleDefinition -Role $item
             }
             else
             {
@@ -125,7 +125,7 @@ function Add-RoleDefinitions {
             $item.AssignableScopes.Clear();
             $item.AssignableScopes.Add($NewScope);
             
-            New-AzRoleDefinition -InputObject $item
+            New-AzRoleDefinition -Role $item
         }
 
     }
