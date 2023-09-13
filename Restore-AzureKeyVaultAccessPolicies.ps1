@@ -1,4 +1,4 @@
-function Restore-AllAzureKeyVaults ($allAkvs, $PrincipalIdMapping) {
+function Restore-AllAzureKeyVaults ($TenantId, $allAkvs, $PrincipalIdMapping) {
     # $akvOutputFilePath = ".\akvInfo.json"
     # $allAkvs = (Get-Content $akvOutputFilePath -Raw) | ConvertFrom-Json
 
@@ -6,13 +6,13 @@ function Restore-AllAzureKeyVaults ($allAkvs, $PrincipalIdMapping) {
     
     $count = 1
     foreach ($akv in $allAkvs) {
-        Update-AkvAcessPolicy -akv $akv -PrincipalIdMapping $PrincipalIdMapping | Out-Null
+        Update-AkvAcessPolicy -tenantId $TenantId -akv $akv -PrincipalIdMapping $PrincipalIdMapping
         Write-Output ("Finished restoring Azure Key Vault Access Policy: {0} / {1}" -f $count, $allAkvs.Count)
         $count++
     }
 }
 
-function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
+function Update-AkvAcessPolicy ($tenantId, $akv, $PrincipalIdMapping) {
     # Appending accessPolicies resource type, operation kind (add) and API version to akv resource id
     $path = $akv.ResourceId + "/accessPolicies/add?api-version=2022-07-01"
 
@@ -22,6 +22,8 @@ function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
         location = $akv.Location
         properties = [PSCustomObject]@{
             accessPolicies = New-Object System.Collections.ArrayList
+            tenantId = $tenantId
+            tenantName = $tenantId
         }
     }
 
@@ -34,19 +36,19 @@ function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
 
             $requestBody.properties.accessPolicies.Add(
                 [PSCustomObject]@{
-                    tenantId = $accessPolicy.TenantId
                     objectId = $newObjId
                     permissions = [PSCustomObject]@{
                         keys = $accessPolicy.PermissionsToKeys
                         secrets = $accessPolicy.PermissionsToSecrets
                         certificates = $accessPolicy.PermissionsToCertificates
                         storage = $accessPolicy.PermissionsToStorage
+                        tenantId = $tenantId
                     }
                 }
-            ) | out-null
+            )
         }
     }
 
-    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5) | Out-Null
+    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
 }
 
