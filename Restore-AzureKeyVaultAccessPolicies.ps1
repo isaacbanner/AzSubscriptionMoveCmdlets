@@ -6,7 +6,7 @@ function Restore-AllAzureKeyVaults ($allAkvs, $PrincipalIdMapping) {
     
     $count = 1
     foreach ($akv in $allAkvs) {
-        Update-AkvAcessPolicy -akv $akv -PrincipalIdMapping $PrincipalIdMapping
+        Update-AkvAcessPolicy -akv $akv -PrincipalIdMapping $PrincipalIdMapping | Out-Null
         Write-Output ("Finished restoring Azure Key Vault Access Policy: {0} / {1}" -f $count, $allAkvs.Count)
         $count++
     }
@@ -47,6 +47,6 @@ function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
         }
     }
 
-    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
+    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5) | Out-Null
 }
 
