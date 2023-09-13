@@ -1,4 +1,4 @@
-function Restore-AllAzureKeyVaults ($allAkvs) {
+function Restore-AllAzureKeyVaults ($allAkvs, $PrincipalIdMapping) {
     # $akvOutputFilePath = ".\akvInfo.json"
     # $allAkvs = (Get-Content $akvOutputFilePath -Raw) | ConvertFrom-Json
 
@@ -6,15 +6,15 @@ function Restore-AllAzureKeyVaults ($allAkvs) {
     
     $count = 1
     foreach ($akv in $allAkvs) {
-        Update-AkvAcessPolicy -akv $akv
+        Update-AkvAcessPolicy -akv $akv -PrincipalIdMapping $PrincipalIdMapping
         Write-Output ("Finished restoring Azure Key Vault Access Policy: {0} / {1}" -f $count, $allAkvs.Count)
         $count++
     }
 }
 
-function Update-AkvAcessPolicy ($akv) {
-    # Appending accessPolicies resource type, operation kind (replace) and API version to akv resource id
-    $path = $akv.ResourceId + "/accessPolicies/replace?api-version=2022-07-01"
+function Update-AkvAcessPolicy ($akv, $PrincipalIdMapping) {
+    # Appending accessPolicies resource type, operation kind (add) and API version to akv resource id
+    $path = $akv.ResourceId + "/accessPolicies/add?api-version=2022-07-01"
 
     $requestBody = [PSCustomObject]@{
         id = $akv.ResourceId + "/accessPolicies"
@@ -27,20 +27,26 @@ function Update-AkvAcessPolicy ($akv) {
 
     # $requestBody.properties.accessPolicies = New-Object System.Collections.ArrayList
     foreach ($accessPolicy in $akv.AccessPolicies) {
-        $requestBody.properties.accessPolicies.Add(
-            [PSCustomObject]@{
-                tenantId = $accessPolicy.TenantId
-                objectId = $accessPolicy.ObjectId
-                permissions = [PSCustomObject]@{
-                    keys = $accessPolicy.PermissionsToKeys
-                    secrets = $accessPolicy.PermissionsToSecrets
-                    certificates = $accessPolicy.PermissionsToCertificates
-                    storage = $accessPolicy.PermissionsToStorage
+        
+        $objId = $accessPolicy.ObjectId
+        if ($PrincipalIdMapping.ContainsKey($objId)) {
+            $newObjId = $PrincipalIdMapping[$objId];
+
+            $requestBody.properties.accessPolicies.Add(
+                [PSCustomObject]@{
+                    tenantId = $accessPolicy.TenantId
+                    objectId = $newObjId
+                    permissions = [PSCustomObject]@{
+                        keys = $accessPolicy.PermissionsToKeys
+                        secrets = $accessPolicy.PermissionsToSecrets
+                        certificates = $accessPolicy.PermissionsToCertificates
+                        storage = $accessPolicy.PermissionsToStorage
+                    }
                 }
-            }
-        ) | out-null
+            ) | out-null
+        }
     }
 
-    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $patchBody -Depth 5)
+    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
 }
 

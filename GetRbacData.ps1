@@ -51,7 +51,15 @@ function Add-RoleAssignments {
             if ($existingRA.Count -eq 0)
             {
                 Write-Output "Adding Role Assignment for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
-                New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion
+
+                if (-not $roleAssignment.Condition -and -not $roleAssignment.ConditionVersion)
+                {
+                    New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion
+                }
+                else
+                {
+                    New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope
+                }
             }
             else 
             {
@@ -101,8 +109,7 @@ function Add-RoleDefinitions {
                throw "Role Definition found with same Id but different properties in new tenant. Rbac Copy failed";
             }
             
-            
-            if (-Not $existingRole.AssignableScopes.Contains($AssignableScope) -and -Not $existingRole.AssignableScopes.Contains("/"))
+            if (-Not $existingRole.AssignableScopes.Contains($AssignableScope) -and -Not $existingRole.AssignableScopes.Contains("/") -and -Not (Check-StringStartsWithX $existingRole.AssignableScopes $AssignableScope))
             {
                 $existingRole.AssignableScopes.Add($AssignableScope);
                 Write-Output "Found role definition with same properties but missing assignable scope"
@@ -132,6 +139,23 @@ function Compare-Arrays($a1, $b1) {
     } else {
         return $false
     }
+}
+
+function Check-StringStartsWithX {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string[]]$stringArray,
+        [Parameter(Mandatory=$true)]
+        [string]$input
+    )
+
+    foreach ($string in $stringArray) {
+        if ($string.StartsWith($input)) {
+            return $true
+        }
+    }
+
+    return $false
 }
 
 <#
