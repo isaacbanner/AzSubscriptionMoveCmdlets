@@ -52,7 +52,7 @@ function Add-RoleAssignments {
             {
                 Write-Output "Adding Role Assignment for Principal: " $newPrincipalId " Scope: " $roleAssignment.Scope ", RoleDefinitionName" $roleAssignment.RoleDefinitionName;
 
-                if (-not $roleAssignment.Condition -and -not $roleAssignment.ConditionVersion)
+                if ($roleAssignment.Condition -and $roleAssignment.ConditionVersion)
                 {
                     New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion
                 }
