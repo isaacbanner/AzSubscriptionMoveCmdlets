@@ -15,5 +15,6 @@
 function Restore-AzSingleFederatedCredentialIdentity($federatedIdentityCredential)
 {
     $modifiedIssuer =   $federatedIdentityCredential.issuer -replace $OldTenantId, $NewTenantId
-    return New-AzFederatedIdentityCredentials -IdentityName $federatedIdentityCredential.identityName -Name $federatedIdentityCredential.name -ResourceGroupName $federatedIdentityCredential.resourceGroupName -Audience $federatedIdentityCredential.audience -Issuer $modifiedIssuer -Subject $federatedIdentityCredential.subject 
+    $newFIC = New-AzFederatedIdentityCredentials -IdentityName $federatedIdentityCredential.identityName -Name $federatedIdentityCredential.name -ResourceGroupName $federatedIdentityCredential.resourceGroupName -Audience $federatedIdentityCredential.audience -Issuer $modifiedIssuer -Subject $federatedIdentityCredential.subject 
+    return ConvertTo-FederatedIdentityCredentialModel -AzFIC $newFIC
 }
