@@ -110,13 +110,41 @@ function Restore-AzIdentityAndRbac(
     [PsCustomObject[]] $Fics,
     [PsCustomObject[]] $RoleAssignments,
     [PsCustomObject[]] $RoleDefinitions,
-    [PsCustomObject[]] $KeyVaults)
+    [PsCustomObject[]] $KeyVaults,
+    [Parameter(Mandatory=$false)][string] $LocalDataFolder,
+    [Parameter(Mandatory=$false)][string] $AzStorageResourceGroup,
+    [Parameter(Mandatory=$false)][string] $AzStorageAccountName
+)
 {
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
     {
         Write-Output "boo"
+    }
+
+    if ($LocalDataFolder)
+    {
+        $storageConfig = [StorageConfig]@{
+            LocalFolderName = $LocalDataFolder
+        }
+    }
+    if ($AzStorageResourceGroup -and $AzStorageAccountName)
+    {
+        $storageConfig = [StorageConfig]@{
+            StorageAccountResourceGroup = $AzStorageResourceGroup
+            StorageAccountName = $AzStorageAccountName
+        }
+    }
+
+    if ($storageConfig)
+    {
+        $Identities = Get-MigrationData -Config $storageConfig -Identifier "identities"
+        $Resources = Get-MigrationData -Config $storageConfig -Identifier "resources"
+        $Fics = Get-MigrationData -Config $storageConfig -Identifier "fics"
+        $RoleAssignments = Get-MigrationData -Config $storageConfig -Identifier "roleAssignments"
+        $RoleDefinitions = Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions"
+        $KeyVaults = Get-MigrationData -Config $storageConfig -Identifier "keyVaults"
     }
 
     # Recreate custom role definitions
