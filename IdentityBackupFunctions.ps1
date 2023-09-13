@@ -60,6 +60,9 @@ function Get-AllIdentityEnabledResources ([string] $Subscription)
     Write-Progress -Activity "Reading all identity enabled resources and assignments in subscription $Subscription"
     $query = $argResourceQuery -f $Subscription
     $ArgResources = Search-AzGraph -Query $query
+
+    # TODO: Strip out cross-subscription assignments
+
     return $ArgResources | % {
         ConvertTo-ResourceModel $_
     }
