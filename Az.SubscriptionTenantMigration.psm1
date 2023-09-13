@@ -109,6 +109,9 @@ function Restore-AzIdentityAndRbac(
     # Restore role assignments on UA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedMap
 
+    # Restore local access policies for UA identities
+    # TODO: DO
+
     # Restore FIC on new UA objects
     $Fics | % {
         Restore-AzSingleFederatedCredentialIdentity -federatedIdentityCredential $_
@@ -125,10 +128,13 @@ function Restore-AzIdentityAndRbac(
 
     # Restore role assignments on SA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $systemAssignedMap
+    
+    # Restore local access policies for SA identities
+    # TODO: DO
 
     # Clean up temp UA identity
     Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
     Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
 }
 
-# Export-ModuleMember -Function @("Backup-AzIdentityAndRbac"; "Restore-AzIdentityAndRbac")
+Export-ModuleMember -Function @("Backup-AzIdentityAndRbac"; "Restore-AzIdentityAndRbac")
