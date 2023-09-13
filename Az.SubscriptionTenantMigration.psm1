@@ -124,7 +124,7 @@ function Restore-AzIdentityAndRbac(
 
     # Create temp identity for UA-only resources
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
-    $identityName = "TempWorkflowIdentity" + [Guid]::NewGuid().ToString()
+    $identityName = "TempWorkflowIdentity-" + [Guid]::NewGuid().ToString()
     $tempRg = New-AzResourceGroup -Name $rgName -Location "westus"
     $tempUaIdentity = New-AzUserAssignedIdentity -ResourceGroupName $rgName -Name $identityName -Location "westus"
 
