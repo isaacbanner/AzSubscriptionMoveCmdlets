@@ -128,7 +128,7 @@ function Restore-AzIdentityAndRbac(
 
     # Clean up temp UA identity
     Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
-    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Forces
+    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
 }
 
 # Export-ModuleMember -Function @("Backup-AzIdentityAndRbac"; "Restore-AzIdentityAndRbac")
