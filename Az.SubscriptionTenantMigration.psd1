@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# RootModule = ''
+RootModule = '.\Az.SubscriptionTenantMigration.psm1'
 
 # Version number of this module.
 ModuleVersion = '0.0.1'
@@ -51,10 +51,10 @@ Copyright = '(c) Microsoft. All rights reserved.'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @(Az.Accounts; Az.ManagedServiceIdentity; Az.ResourceGraph; Az.Resources;)
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+RequiredAssemblies = @(System.GUID)
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
