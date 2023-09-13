@@ -131,3 +131,59 @@ function Get-MigrationData {
         }
     }
 }
+
+function Remove-MigrationDataInternal {
+    [CmdletBinding()]
+    param (
+       [Parameter(Mandatory=$true)] 
+       [StorageConfig]$Config
+    )
+    
+    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+    $choices.Add((New-Object System.Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
+    $choices.Add((New-Object System.Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
+    if ($Config.LocalFolderName)
+    {
+        $folderPath = "$($Config.LocalFolderName)\migrationData"
+        $decision = $Host.UI.PromptForChoice(
+            "Remove migration data",
+            "Are you sure you want to remove all migration data from $($folderPath)?",
+            $choices,
+            0)
+        if ($decision -ne 0)
+        {
+            return
+        }
+
+        if (Test-Path $folderPath)
+        {
+            Remove-Item -Recurse -Force $folderPath
+        }
+    }
+
+    if ($Config.StorageAccountResourceGroup -and $Config.StorageAccountName)
+    {
+        $decision = $Host.UI.PromptForChoice(
+            "Remove migration data",
+            "Are you sure you want to remove all migration data from $($Config.StorageAccountName)?",
+            $choices,
+            0)
+        if ($decision -ne 0)
+        {
+            return
+        }
+
+        $storageAccount = Get-AzStorageAccount -ResourceGroupName $Config.StorageAccountResourceGroup -Name $Config.StorageAccountName
+        if (-not $storageAccount) {
+            $message = "Storage account in $($Config.StorageAccountResourceGroup) with name $($Config.StorageAccountName) was not found"
+            Write-Error $message
+            throw $message
+        }
+
+        $storageContainer = Get-AzStorageContainer -Name "migrationdata" -Context $storageAccount.Context -ErrorAction SilentlyContinue
+        if ($storageContainer)
+        {
+            Remove-AzStorageContainer -Name $storageContainer.Name -Context $storageAccount.Context
+        }
+    }
+}

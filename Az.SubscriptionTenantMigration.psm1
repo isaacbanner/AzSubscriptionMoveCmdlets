@@ -199,4 +199,30 @@ function Restore-AzIdentityAndRbac(
     Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
 }
 
-Export-ModuleMember -Function @("Backup-AzIdentityAndRbac"; "Restore-AzIdentityAndRbac")
+function Remove-MigrationData {
+    param (
+        [Parameter(Mandatory=$false)][string] $LocalDataFolder,
+        [Parameter(Mandatory=$false)][string] $AzStorageResourceGroup,
+        [Parameter(Mandatory=$false)][string] $AzStorageAccountName
+    )
+    if ($LocalDataFolder)
+    {
+        $storageConfig = [StorageConfig]@{
+            LocalFolderName = $LocalDataFolder
+        }
+    }
+    if ($AzStorageResourceGroup -and $AzStorageAccountName)
+    {
+        $storageConfig = [StorageConfig]@{
+            StorageAccountResourceGroup = $AzStorageResourceGroup
+            StorageAccountName = $AzStorageAccountName
+        }
+    }
+
+    if ($storageConfig)
+    {
+        Remove-MigrationDataInternal -Config $storageConfig
+    }
+}
+
+Export-ModuleMember -Function @("Backup-AzIdentityAndRbac"; "Restore-AzIdentityAndRbac"; "Remove-MigrationData")
