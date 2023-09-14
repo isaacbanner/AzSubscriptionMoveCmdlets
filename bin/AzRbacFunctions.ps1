@@ -111,7 +111,7 @@ function Add-RoleDefinitions {
                throw "Role Definition found with same Id but different properties in new tenant. Rbac Copy failed";
             }
             
-            if (-Not $existingRole.AssignableScopes.Contains($AssignableScope) -and -Not $existingRole.AssignableScopes.Contains("/") -and -Not (Check-StringStartsWithX $existingRole.AssignableScopes $AssignableScope))
+            if (-Not $existingRole.AssignableScopes.Contains($AssignableScope) -and -Not $existingRole.AssignableScopes.Contains("/") -and -Not (Confirm-StringStartsWithX $existingRole.AssignableScopes $AssignableScope))
             {
                 $existingRole.AssignableScopes.Add($AssignableScope);
                 Write-Output "Found role definition with same properties but missing assignable scope"
@@ -143,7 +143,7 @@ function Compare-Arrays($a1, $b1) {
     }
 }
 
-function Check-StringStartsWithX {
+function Confirm-StringStartsWithX {
     param (
         [Parameter(Mandatory=$true)]
         [string[]]$stringArray,

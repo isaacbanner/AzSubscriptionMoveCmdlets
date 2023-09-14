@@ -10,7 +10,6 @@
 . $PSScriptRoot\bin\AzRbacFunctions.ps1
 . $PSScriptRoot\bin\CommonTools.ps1
 . $PSScriptRoot\bin\DataStorage.ps1
-. $PSScriptRoot\Test-SubscriptionOwnership.ps1
 
 function Backup-AzIdentityAndRbac(
     [Parameter(Mandatory=$true)][string] $Subscription,
