@@ -30,7 +30,9 @@ function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
         $vault.Properties.TenantId = $TenantId
         $vault.Properties.AccessPolicies = @()
 
+        # Note: wipes all previous access policies on the KV from the old tenant
         Set-AzResource -ResourceId $akv.ResourceId -Properties $vault.Properties -Force
+
         Write-Output ("Finished updating Azure Key Vault TenatId: {0} / {1}" -f $count, $allAkvs.Count)
         $count++
     }
