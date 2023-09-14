@@ -27,6 +27,9 @@ function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
     $count = 1
     foreach ($akv in $AllAkvs) {
         $vault = Get-AzResource -ResourceId $akv.ResourceId -ExpandProperties
+        $vault.Properties.TenantId = $TenantId
+        $vault.Properties.AccessPolicies = @()
+
         Set-AzResource -ResourceId $akv.ResourceId -Properties $vault.Properties -Force
         Write-Output ("Finished updating Azure Key Vault TenatId: {0} / {1}" -f $count, $allAkvs.Count)
         $count++
@@ -57,8 +60,6 @@ function Update-AkvAcessPolicy ($tenantId, $Akv, $PrincipalIdMapping) {
         location = $Akv.Location
         properties = [PSCustomObject]@{
             accessPolicies = New-Object System.Collections.ArrayList
-            tenantId = $tenantId
-            tenantName = $tenantId
         }
     }
 
