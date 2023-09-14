@@ -24,6 +24,23 @@ function Get-UserContext ([string] $Subscription, [string] $TenantId) {
     return $context
 }
 
+function Test-SubscriptionOwnership ([string] $SubscriptionId)
+{
+    if (-not $SubscriptionId) {
+        Write-Debug "No subscription specified, testing subscription for current Azure context"
+        $SubscriptionId = (Get-UserContext).Subscription.Id
+    }
+
+    Write-Debug "Testing subscription ownership for $SubscriptionId"
+
+    $ownerAssignments = (Get-AzRoleAssignment
+        | Where-Object { $_.Scope -eq "/subscriptions/$SubscriptionId" }
+        | Where-Object { $_.RoleDefinitionName -eq "Owner" }
+        | Measure-Object).Count
+
+    return $ownerAssignments -gt 0
+}
+
 function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $ResourceType)
 {
     $providerResponse = Invoke-AzRestMethod -Path "/providers/$($ResourceProvider)?api-version=2023-07-01"

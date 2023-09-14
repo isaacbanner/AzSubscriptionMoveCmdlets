@@ -1,3 +1,23 @@
+<#
+.SYNOPSIS
+    Tooling for backup/restore of keyvaults and their local access policies
+#>
+
+function Get-AllAzureKeyVaults () {
+    $allAkvs = Get-AzKeyVault
+    $resultAkvList = New-Object System.Collections.ArrayList
+    # Write-Output "Start downloading Azure KeyVault information ..."
+
+    foreach ($akv in $allAkvs) {
+        $kv = Get-AzKeyVault -ResourceGroupName $akv.ResourceGroupName -VaultName $akv.VaultName
+        $resultAkvList.Add($kv) | out-null
+        # Write-Output ("Finished downloading {0} / {1}" -f $resultAkvList.Count, $allAkvs.Count)
+    }
+
+    return $resultAkvList
+}
+
+
 function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
     # $akvOutputFilePath = ".\akvInfo.json"
     # $AllAkvs = (Get-Content $akvOutputFilePath -Raw) | ConvertFrom-Json

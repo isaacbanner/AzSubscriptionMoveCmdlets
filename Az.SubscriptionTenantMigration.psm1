@@ -4,28 +4,13 @@
     Includes tooling to backup identity and RBAC configuration then restore that configuration in the new tenant.
 #>
 
-. $PSScriptRoot\CommonTools.ps1
-. $PSScriptRoot\GetRbacData.ps1
-. $PSScriptRoot\IdentityBackupFunctions.ps1
-. $PSScriptRoot\dataStorage.ps1
-. $PSScriptRoot\Restore-AzFederatedIdentityCredentials.ps1
-. $PSScriptRoot\Restore-AzureKeyVaultAccessPolicies.ps1
-. $PSScriptRoot\Restore-AzUserAssignedIdentities.ps1
+. $PSScriptRoot\bin\AzIdentityBackupFunctions.ps1
+. $PSScriptRoot\bin\AzIdentityRestoreFunctions.ps1
+. $PSScriptRoot\bin\AzKeyVaultFunctions.ps1
+. $PSScriptRoot\bin\AzRbacFunctions.ps1
+. $PSScriptRoot\bin\CommonTools.ps1
+. $PSScriptRoot\bin\DataStorage.ps1
 . $PSScriptRoot\Test-SubscriptionOwnership.ps1
-
-function Get-AllAzureKeyVaults () {
-    $allAkvs = Get-AzKeyVault
-    $resultAkvList = New-Object System.Collections.ArrayList
-    # Write-Output "Start downloading Azure KeyVault information ..."
-
-    foreach ($akv in $allAkvs) {
-        $kv = Get-AzKeyVault -ResourceGroupName $akv.ResourceGroupName -VaultName $akv.VaultName
-        $resultAkvList.Add($kv) | out-null
-        # Write-Output ("Finished downloading {0} / {1}" -f $resultAkvList.Count, $allAkvs.Count)
-    }
-
-    return $resultAkvList
-}
 
 function Backup-AzIdentityAndRbac(
     [Parameter(Mandatory=$true)][string] $Subscription,

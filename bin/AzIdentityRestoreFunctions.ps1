@@ -109,6 +109,8 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
     }
 }
 
-<#
-    $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
-#>
+function Restore-AzSingleFederatedCredentialIdentity([PsCustomObject] $federatedIdentityCredential)
+{
+    $modifiedIssuer =   $federatedIdentityCredential.issuer -replace $OldTenantId, $NewTenantId
+    New-AzFederatedIdentityCredentials -IdentityName $federatedIdentityCredential.identityName -Name $federatedIdentityCredential.name -ResourceGroupName $federatedIdentityCredential.resourceGroupName -Audience $federatedIdentityCredential.audience -Issuer $modifiedIssuer -Subject $federatedIdentityCredential.subject | Out-Null
+}
