@@ -91,9 +91,25 @@ function ConvertTo-Hashtable ([PsCustomObject] $PsObject)
     }
 }
 
-function ConvertTo-ResourceModel([Parameter(ValueFromPipeline=$true)] [PsCustomObject] $argResource)
+function FilterHashTable([hashtable]$Hashtable,[string]$StringToFilter)
+{
+    $filteredHashtable = @{}
+
+    foreach ($key in $Hashtable.Keys) {
+        $value = $Hashtable[$key]
+
+        if ($value -like "*$StringToFilter*") {
+            $filteredHashtable[$key] = $value
+        }
+    }
+
+    return $filteredHashtable
+}
+
+function ConvertTo-ResourceModel([Parameter(ValueFromPipeline=$true)] [PsCustomObject] $argResource, [string] $SubscriptionId)
 {
     $resourceProvider, $resourceType = Split-ResourceProviderAndType $argResource.type
+    $userAssignedIdentities = ConvertTo-Hashtable -PsObject $argResource.identity.userAssignedIdentities
 
     return [PSCustomObject]@{
         id = $argResource.id
@@ -103,7 +119,7 @@ function ConvertTo-ResourceModel([Parameter(ValueFromPipeline=$true)] [PsCustomO
         resourceType = $resourceType
         identityType = $argResource.identity.type
         objectId = $argResource.identity.principalId
-        userAssignedIdentities = ConvertTo-Hashtable -PsObject $argResource.identity.userAssignedIdentities
+        userAssignedIdentities = Filter-Hashtable -Hashtable $userAssignedIdentities -StringToFilter $SubscriptionId
         resourceGroupName = $argResource.resourceGroup
     }
 }
