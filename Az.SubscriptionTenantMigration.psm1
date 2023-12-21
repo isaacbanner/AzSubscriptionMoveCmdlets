@@ -74,6 +74,7 @@ function Backup-AzIdentityAndRbac(
         $roleAssignments | Set-MigrationData -Config $storageConfig -Identifier "roleAssignments" -Force:$Force
         $roleDefinitions | Set-MigrationData -Config $storageConfig -Identifier "roleDefinitions" -Force:$Force
         $keyVaults | Set-MigrationData -Config $storageConfig -Identifier "keyVaults" -Force:$Force
+        $TenantId | Set-MigrationData -Config $storageConfig - Identifier "backupTenantId" -Force:$Force 
     }
 
     return [PSCustomObject]@{
@@ -83,6 +84,7 @@ function Backup-AzIdentityAndRbac(
         RoleAssignments = $roleAssignments
         RoleDefinitions = $roleDefinitions
         KeyVaults = $keyVaults
+        BackupTenantId = $TenantId
     }
 }
 
@@ -129,6 +131,7 @@ function Restore-AzIdentityAndRbac(
         $RoleAssignments = @(Get-MigrationData -Config $storageConfig -Identifier "roleAssignments")
         $RoleDefinitions = @(Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions")
         $KeyVaults = @(Get-MigrationData -Config $storageConfig -Identifier "keyVaults")
+        $BackupTenantId = @(Get-MigrationData -Config $storageConfig -Identifier "backupTenantId")
     }
 
     # Recreate custom role definitions
@@ -163,7 +166,7 @@ function Restore-AzIdentityAndRbac(
 
     # Restore FIC on new UA objects
     $Fics | % {
-        Restore-AzSingleFederatedCredentialIdentity -federatedIdentityCredential $_
+        Restore-AzSingleFederatedCredentialIdentity -FederatedIdentityCredential $_ -BackupTenantId $BackupTenantId -RestoreTenantId $TenantId
     }
 
     # Restore SA identities and UA identity assignments
