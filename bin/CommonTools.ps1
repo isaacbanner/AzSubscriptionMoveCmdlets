@@ -83,7 +83,7 @@ function Get-AzResourceDefinition(
     }
     elseif ($PSBoundParameters.ContainsKey("Resource")) {
         $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.ResourceProvider -ResourceType $Resource.ResourceType
-        $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.releaseApiVersions[0] -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
+        $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.latestOrDefault -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
     }
     else
     {

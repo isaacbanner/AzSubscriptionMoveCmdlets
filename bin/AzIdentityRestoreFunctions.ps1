@@ -63,7 +63,7 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
     }
 
     $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.resourceProvider -ResourceType $Resource.resourceType
-    $path = $Resource.id + "?api-version=" + $apiVersions.defaultApiVersion
+    $path = $Resource.id + "?api-version=" + $apiVersions.latestOrDefault
     $toggleSystemAssigned = $False
     $tempUserAssigned = $False
 
