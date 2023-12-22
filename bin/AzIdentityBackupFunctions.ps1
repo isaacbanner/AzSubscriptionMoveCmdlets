@@ -61,8 +61,6 @@ function Get-AllIdentityEnabledResources ([string] $Subscription)
     $query = $argResourceQuery -f $Subscription
     $ArgResources = Search-AzGraph -Query $query
 
-    # TODO: Strip out cross-subscription assignments
-
     return $ArgResources | % {
         ConvertTo-ResourceModel $_
     }
