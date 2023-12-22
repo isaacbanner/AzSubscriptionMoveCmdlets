@@ -55,18 +55,21 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
     {
         if ($releaseApiVersions.Count -gt 0)
         {
-            $defaultApiVersion = $releaseApiVersions[-1]
+            $defaultApiVersion = $releaseApiVersions[0]
         }
         else 
         {
-            $defaultApiVersion = $previewApiVersions[-1]
+            $defaultApiVersion = $previewApiVersions[0]
         }
     }
+
+    $latestOrDefault = if($releaseApiVersions.Count -gt 0) { return $releaseApiVersions[0] } else { return $defaultApiVersion }
 
     return [PSCustomObject]@{
         releaseApiVersions = $releaseApiVersions
         previewApiVersions = $previewApiVersions
         defaultApiVersion = $defaultApiVersion
+        latestOrDefault = $latestOrDefault
     }
 }
 
@@ -80,7 +83,7 @@ function Get-AzResourceDefinition(
     }
     elseif ($PSBoundParameters.ContainsKey("Resource")) {
         $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.ResourceProvider -ResourceType $Resource.ResourceType
-        $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.defaultApiVersion -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
+        $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.releaseApiVersions[0] -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
     }
     else
     {
