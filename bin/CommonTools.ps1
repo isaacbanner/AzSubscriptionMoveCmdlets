@@ -63,7 +63,7 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
         }
     }
 
-    $latestOrDefault = if($releaseApiVersions.Count -gt 0) { return $releaseApiVersions[0] } else { return $defaultApiVersion }
+    $latestOrDefault = if($releaseApiVersions.Count -gt 0) { $releaseApiVersions[0] } else { $defaultApiVersion }
 
     return [PSCustomObject]@{
         releaseApiVersions = $releaseApiVersions
@@ -73,9 +73,10 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
     }
 }
 
-function Get-AzResourceDefinition(
+function Format-AzResourceDefinition(
     [Parameter(Mandatory=$false)][PsCustomObject] $Resource, 
-    [Parameter(Mandatory=$false)][string] $ResourcePath)
+    [Parameter(Mandatory=$false)][string] $ResourcePath,
+    [Parameter(Mandatory=$false)][scriptblock] $FilterOperation)
 {
     if ($PSBoundParameters.ContainsKey("ResourcePath"))
     {
@@ -90,7 +91,33 @@ function Get-AzResourceDefinition(
         return $null
     }
     
-    return ConvertFrom-Json $response.Content
+    $resourceBody = $response.Content
+
+    if ($PSBoundParameters.ContainsKey("FilterOperation"))
+    {
+        # FilterOperation should perform some caller-specified string manipulation
+        # on the resource definition before parsing the JSON object
+        $resourceBody = $FilterOperation.InvokeReturnAsIs($resourceBody)
+    }
+    
+    return ConvertFrom-Json $resourceBody
+}
+
+function Get-AzResourceDefinition(
+    [Parameter(Mandatory=$false)][PsCustomObject] $Resource, 
+    [Parameter(Mandatory=$false)][string] $ResourcePath)
+{
+    if ($PSBoundParameters.ContainsKey("ResourcePath"))
+    {
+        return Format-AzResourceDefinition -ResourcePath $ResourcePath
+    }
+    elseif ($PSBoundParameters.ContainsKey("Resource")) {
+        return Format-AzResourceDefinition -Resource $Resource
+    }
+    else
+    {
+        return $null
+    }
 }
 
 
