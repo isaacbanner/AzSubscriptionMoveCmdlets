@@ -70,11 +70,23 @@ function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $Res
     }
 }
 
-function Get-AzResourceDefinition([PsCustomObject] $Resource)
+function Get-AzResourceDefinition(
+    [Parameter(Mandatory=$false)][PsCustomObject] $Resource, 
+    [Parameter(Mandatory=$false)][string] $ResourcePath)
 {
-    $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.ResourceProvider -ResourceType $Resource.ResourceType
-    $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.defaultApiVersion -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
-
+    if ($PSBoundParameters.ContainsKey("ResourcePath"))
+    {
+        $response = Invoke-AzRestMethod -Method GET -Path $ResourcePath
+    }
+    elseif ($PSBoundParameters.ContainsKey("Resource")) {
+        $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.ResourceProvider -ResourceType $Resource.ResourceType
+        $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.defaultApiVersion -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
+    }
+    else
+    {
+        return $null
+    }
+    
     return ConvertFrom-Json $response.Content
 }
 
