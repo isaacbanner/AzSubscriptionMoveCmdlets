@@ -109,7 +109,7 @@ function Restore-AzIdentityAssignments($Resource, $TempUaIdentityId)
     }
 }
 
-function Restore-AzSingleFederatedCredentialIdentity([PsCustomObject] $FederatedIdentityCredential, [string]BackupTenantId, [string]RestoreTenantId)
+function Restore-AzSingleFederatedCredentialIdentity([PsCustomObject] $FederatedIdentityCredential, [string] $BackupTenantId, [string] $RestoreTenantId)
 {
     $modifiedIssuer =   $FederatedIdentityCredential.issuer -replace $BackupTenantId, $RestoreTenantId
     New-AzFederatedIdentityCredentials -IdentityName $FederatedIdentityCredential.identityName -Name $FederatedIdentityCredential.name -ResourceGroupName $FederatedIdentityCredential.resourceGroupName -Audience $FederatedIdentityCredential.audience -Issuer $modifiedIssuer -Subject $FederatedIdentityCredential.subject | Out-Null
