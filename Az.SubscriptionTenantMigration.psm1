@@ -143,7 +143,8 @@ function Restore-AzIdentityAndRbac(
     $tempRg = New-AzResourceGroup -Name $rgName -Location "westus"
     $tempUaIdentity = New-AzUserAssignedIdentity -ResourceGroupName $rgName -Name $identityName -Location "westus"
 
-    $userAssignedMap = @{}
+    $userAssignedAidMap = @{}
+    $userAssignedOidMap = @{}
     $systemAssignedMap = @{}
 
     # Delete and recreate UA identities
@@ -151,7 +152,8 @@ function Restore-AzIdentityAndRbac(
         if ($_.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities")
         {
             $newUa = Restore-AzSingleIdentity -Identity $_
-            $userAssignedMap[$_.objectId] = $newUa.objectId
+            $userAssignedOidMap[$_.objectId] = $newUa.objectId
+            $userAssignedAidMap[$_.clientId] = $newUa.clientId
         }
     }
 
@@ -159,10 +161,10 @@ function Restore-AzIdentityAndRbac(
     Update-AzureKeyVaultTenantId -TenantId $TenantId -AllAkvs $KeyVaults
 
     # Restore role assignments on UA identities
-    Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedMap
+    Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedOidMap
 
     # Restore local access policies for UA identities
-    Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $userAssignedMap
+    Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $userAssignedOidMap
 
     # Restore FIC on new UA objects
     $Fics | % {
@@ -171,7 +173,7 @@ function Restore-AzIdentityAndRbac(
 
     # Restore SA identities and UA identity assignments
     $Resources | % {
-        $newSa = Restore-AzIdentityAssignments -Resource $_ -TempUaIdentityId $tempUaIdentity.Id
+        $newSa = Restore-AzIdentityAssignments -Resource $_ -TempUaIdentityId $tempUaIdentity.Id -UserAssignedOidMap $userAssignedOidMap -UserAssignedAidMap $userAssignedAidMap
         if ($_.identityType -match "SystemAssigned")
         {
             $systemAssignedMap[$_.objectId] = $newSa.objectId
