@@ -35,7 +35,7 @@ function Restore-AllFirstPartyAppRoleAssignmentsAtTenantScope ([string] $TenantI
             if($RoleAssignments[$i].DisplayName -eq $firstPartyApps[$j].DisplayName)
             {
                 Write-Output "New Object Id is $firstPartyApps[$j].objectId for RoleAssignment $RoleAssignments[$i].ObjectId"
-                $PrincipalIdMapping[$_.objectId] = $firstPartyApps[$j].objectId
+                $PrincipalIdMapping[$RoleAssignments[$i].objectId] = $firstPartyApps[$j].objectId
                 break
             }
         }
@@ -52,15 +52,22 @@ function Restore-AllFirstPartyAppKVAccessPolicies ($TenantId, $AllAkvs)
     Set-AzContext -Tenant $TenantId
     $firstPartyApps = Get-AzADServicePrincipal -Filter "appOwnerOrganizationId eq f8cdef31-a31e-4b4a-93e4-5f571e91255a" -Count -ConsistencyLevel "eventual"
     $PrincipalIdMapping = @{}
+    $objectIds = @()
 
-    for($i = 0; $i -lt $RoleAssignments.Count; $i++)
+    foreach ($akv in $allAkvs) {
+        $kv = Get-AzKeyVault -ResourceGroupName $akv.ResourceGroupName -VaultName $akv.VaultName
+        # take all object ids for policies
+        $objectIds = $kv.AccessPolicies | select -ExpandProperty ObjectId
+    }
+
+    for($i = 0; $i -lt $objectIds.Count; $i++)
     {
         for( $j = 0; $j -lt $firstPartyApps.Count; $i++)
         {
-            if($RoleAssignments[$i].DisplayName -eq $firstPartyApps[$j].DisplayName)
+            if($objectIds[$i].ObjectId -eq $firstPartyApps[$j].DisplayName)
             {
                 Write-Output "New Object Id is $firstPartyApps[$j].objectId for RoleAssignment $RoleAssignments[$i].ObjectId"
-                $PrincipalIdMapping[$_.objectId] = $firstPartyApps[$j].objectId
+                $PrincipalIdMapping[$objectIds[$i].ObjectId] = $firstPartyApps[$j].objectId
                 break
             }
         }
