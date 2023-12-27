@@ -34,10 +34,11 @@ function Backup-AzIdentityAndRbac(
     $identities = Get-AllIdentitiesAtSubscriptionScope -Subscription $Subscription
     $resources = Get-AllIdentityEnabledResources -Subscription $Subscription
     $fic = Get-FederatedIdentityCredentialsForUserAssignedIdentities -Identities $identities
+    $firstPartyApps = Get-AzFirstPartyApps
     
     # backup role assignments and RBAC
-    $identityPrincipalOids = $identities | % { $_.objectId }
-    $roleAssignments = Get-RoleAssignmentsForPrincipals -PrincipalIds $identityPrincipalOids -SubscriptionId $Subscription
+    $servicePrincipalOids = $identities + $firstPartyApps | % { $_.objectId }
+    $roleAssignments = Get-RoleAssignmentsForPrincipals -PrincipalIds $servicePrincipalOids -SubscriptionId $Subscription
     
     if ($roleAssignments.Length -gt 0)
     {
@@ -52,13 +53,13 @@ function Backup-AzIdentityAndRbac(
     # backup AKV configuration
     $keyVaults = Get-AllAzureKeyVaults
 
-    if ($LocalDataFolder)
+    if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
         $storageConfig = [StorageConfig]@{
             LocalFolderName = $LocalDataFolder
         }
     }
-    if ($AzStorageResourceGroup -and $AzStorageAccountName)
+    if ($PSBoundParameters.ContainsKey("AzStorageResourceGroup") -and $PSBoundParameters.ContainsKey("AzStorageAccountName"))
     {
         $storageConfig = [StorageConfig]@{
             StorageAccountResourceGroup = $AzStorageResourceGroup
@@ -71,6 +72,7 @@ function Backup-AzIdentityAndRbac(
         $identities | Set-MigrationData -Config $storageConfig -Identifier "identities" -Force:$Force
         $resources | Set-MigrationData -Config $storageConfig -Identifier "resources" -Force:$Force
         $fic | Set-MigrationData -Config $storageConfig -Identifier "fics" -Force:$Force
+        $firstPartyApps | Set-MigrationData -Config $storageConfig -Identifier "firstPartyApps" -Force:$Force
         $roleAssignments | Set-MigrationData -Config $storageConfig -Identifier "roleAssignments" -Force:$Force
         $roleDefinitions | Set-MigrationData -Config $storageConfig -Identifier "roleDefinitions" -Force:$Force
         $keyVaults | Set-MigrationData -Config $storageConfig -Identifier "keyVaults" -Force:$Force
@@ -81,6 +83,7 @@ function Backup-AzIdentityAndRbac(
         Identities = $identities
         Resources = $resources
         Fics = $fic
+        FirstPartyApps = $firstPartyApps
         RoleAssignments = $roleAssignments
         RoleDefinitions = $roleDefinitions
         KeyVaults = $keyVaults
@@ -91,12 +94,7 @@ function Backup-AzIdentityAndRbac(
 function Restore-AzIdentityAndRbac(
     [string] $Subscription, 
     [string] $TenantId, 
-    [PsCustomObject[]] $Identities, 
-    [PsCustomObject[]] $Resources,
-    [PsCustomObject[]] $Fics,
-    [PsCustomObject[]] $RoleAssignments,
-    [PsCustomObject[]] $RoleDefinitions,
-    [PsCustomObject[]] $KeyVaults,
+    [Parameter(Mandatory=$false)][PsCustomObject[]] $BackupConfig,
     [Parameter(Mandatory=$false)][string] $LocalDataFolder,
     [Parameter(Mandatory=$false)][string] $AzStorageResourceGroup,
     [Parameter(Mandatory=$false)][string] $AzStorageAccountName
@@ -107,15 +105,16 @@ function Restore-AzIdentityAndRbac(
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
     {
         Write-Output "boo"
+        return $null
     }
 
-    if ($LocalDataFolder)
+    if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
         $storageConfig = [StorageConfig]@{
             LocalFolderName = $LocalDataFolder
         }
     }
-    if ($AzStorageResourceGroup -and $AzStorageAccountName)
+    if ($PSBoundParameters.ContainsKey("AzStorageResourceGroup") -and $PSBoundParameters.ContainsKey("AzStorageAccountName"))
     {
         $storageConfig = [StorageConfig]@{
             StorageAccountResourceGroup = $AzStorageResourceGroup
@@ -123,19 +122,43 @@ function Restore-AzIdentityAndRbac(
         }
     }
 
-    if ($storageConfig)
+    if ($PSBoundParameters.ContainsKey("BackupConfig"))
+    {
+        $Identities = $BackupConfig.Identities
+        $Resources = $BackupConfig.Resources
+        $Fics = $BackupConfig.Fics
+        $FirstPartyApps = $BackupConfig.FirstPartyApps
+        $RoleAssignments = $BackupConfig.RoleAssignments
+        $RoleDefinitions = $BackupConfig.RoleDefinitions
+        $KeyVaults = $BackupConfig.KeyVaults
+        $BackupTenantId = $BackupConfig.BackupTenantId
+    }
+    elseif ($storageConfig)
     {
         $Identities = @(Get-MigrationData -Config $storageConfig -Identifier "identities")
         $Resources = @(Get-MigrationData -Config $storageConfig -Identifier "resources")
         $Fics = @(Get-MigrationData -Config $storageConfig -Identifier "fics")
+        $FirstPartyApps = @(Get-MigrationData -Config $storageConfig -Identifier "firstPartyApps")
         $RoleAssignments = @(Get-MigrationData -Config $storageConfig -Identifier "roleAssignments")
         $RoleDefinitions = @(Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions")
         $KeyVaults = @(Get-MigrationData -Config $storageConfig -Identifier "keyVaults")
         $BackupTenantId = @(Get-MigrationData -Config $storageConfig -Identifier "backupTenantId")
     }
+    else {
+        Write-Error "At least one of '-BackupConfig', '-LocalDataFolder', or '-AzStorageResourceGroup' and '-AzStorageAccountName' must be provided."
+        return $null
+    }
 
     # Recreate custom role definitions
     Add-RoleDefinitions -NewScope "/subscriptions/$Subscription" -RoleDefinitions $roleDefinitions
+
+    # Get 1P app mapping and restore Azure RBAC
+    $firstPartyOidMap = Get-AzFirstPartyPrincipalIdMapping $FirstPartyApps
+    Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $firstPartyOidMap
+
+    # Reset keyvault to new tenantId and restore access policies for 1P apps
+    Update-AzureKeyVaultTenantId -TenantId $TenantId -AllAkvs $KeyVaults
+    Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $firstPartyOidMap
 
     # Create temp identity for UA-only resources
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
@@ -156,9 +179,6 @@ function Restore-AzIdentityAndRbac(
             $userAssignedAidMap[$_.clientId] = $newUa.clientId
         }
     }
-
-    # Update tenantId for Azure Key Vaults
-    Update-AzureKeyVaultTenantId -TenantId $TenantId -AllAkvs $KeyVaults
 
     # Restore role assignments on UA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedOidMap

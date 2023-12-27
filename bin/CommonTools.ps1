@@ -191,3 +191,13 @@ function ConvertTo-FederatedIdentityCredentialModel([PsCustomObject] $Identity, 
         resourceGroupName = $Identity.resourceGroupName
     }
 }
+
+function ConvertTo-FirstPartyAppModel([Parameter(ValueFromPipeline=$true)] [PsCustomObject] $Az1PApp)
+{
+    return [PsCustomObject]@{
+        clientId = $Az1PApp.appId
+        name = $Az1PApp.displayName
+        objectId = $Az1PApp.id
+        is1pApp = $Az1PApp.appOwnerOrganizationId -eq "f8cdef31-a31e-4b4a-93e4-5f571e91255a"
+    }
+}
