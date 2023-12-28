@@ -109,7 +109,10 @@ function Restore-AzIdentityAssignments(
     {
         # If PATCH fails with MethodNotAllowed, do a GET on the resource, 
         #   update identity on the full resource definition, and PUT the changes
-        $payloadResource = Get-AzResourceDefinition -ResourcePath $path
+        $resourceDefinition = Get-AzResourceDefinition -ResourcePath $path
+
+        # Deep copy the GET response to make changes woo reference language, baby!
+        $payloadResource = $resourceDefinition | Copy-Object
 
         $httpMethod = "PUT"
         
@@ -131,7 +134,7 @@ function Restore-AzIdentityAssignments(
         $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 100)
     }
 
-    # If either PUT or PATCH returned a 2xx response, return the new SA identity properties
+    # If either PUT or PATCH returned a 2xx response, retoggle and return the new SA identity properties
     if ($response.StatusCode -lt 300)
     {
         if ($toggleSystemAssigned)
@@ -151,10 +154,39 @@ function Restore-AzIdentityAssignments(
     elseif ($response.StatusCode -eq 400)
     {
         # The most likely/reparable cause here is a RP with direct references to
-        #   identity properties in the resource definition. 
+        #   identity properties in the resource definition. Replace all references to 
+        #   the old objectIds and clientIds with their mapped values.
+        $payloadResource = Format-AzResourceDefinition -ResourcePath $path -FilterOperation {Set-UpdatedIdentityIdsForResource -ResourceDefinition $args[0] -UserAssignedOidMap $UserAssignedOidMap -UserAssignedAidMap $UserAssignedAidMap}
 
-        # $payloadResource = Format-AzResourceDefinition -ResourcePath $path -FilterOperation {Set-UpdatedIdentityIdsForResource -ResourceDefinition $args[0] -UserAssignedOidMap $UserAssignedOidMap -UserAssignedAidMap $UserAssignedAidMap}
-        # TODO: Handle error behavior whoops
+        # We use the max depth here because I don't want to go breaking someone's resource
+        $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 100)
+
+        if ($response.StatusCode -eq 400)
+        {
+            # If it's still 400 then its possible our changes to trigger an update are
+            #   breaking the resource (CMK with only SA identity, eg - can't disable).
+            #   Try applying the original template as a last-ditch operation.
+            
+            $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $resourceDefinition -Depth 100)
+        }
+    }
+
+    # Check for success after replacing RP-specific identity properties
+    if ($response.StatusCode -lt 300 )
+    {
+        if ($toggleSystemAssigned)
+        {
+            $payloadResource.identity.type = Add-SystemAssignedIdentityType -IdentityType $payloadResource.identity.type
+            $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
+    
+            return Get-AzSystemAssignedIdentity -Scope $Resource.id | ConvertTo-IdentityModel
+        }
+        elseif ($tempUserAssigned)
+        {
+            $payloadResource.identity.userAssignedIdentities[$tempUaIdentityId] = $null
+            $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
+            return $null
+        }
     }
     else {
         # TODO: What else could go wrong?

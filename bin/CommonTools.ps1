@@ -3,6 +3,14 @@
     PS Module with multiple utility functions
 #>
 
+using namespace System.Management.Automation
+
+function Copy-Object([Parameter(ValueFromPipeline=$true)] $inputObject)
+{
+    # Wow it's so bad but also the only way to do a deep copy in powershell.
+    return [psserializer]::Deserialize([psserializer]::Serialize($inputObject))
+}
+
 function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
 {
     $firstWhack = $providerNamespaceAndType.IndexOf('/')
