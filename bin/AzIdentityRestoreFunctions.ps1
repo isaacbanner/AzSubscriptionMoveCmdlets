@@ -103,7 +103,7 @@ function Restore-AzIdentityAssignments(
     }
     
     # Attempt a PATCH on the identities, if the RP supports it
-    $response = Invoke-AzRestMethod -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
+    $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
 
     if ($response.StatusCode -eq 405)
     {
@@ -128,7 +128,7 @@ function Restore-AzIdentityAssignments(
         }
 
         # We use the max depth here because I don't want to go breaking someone's resource
-        $response = Invoke-AzRestMethod -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 100)
+        $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 100)
     }
 
     # If either PUT or PATCH returned a 2xx response, return the new SA identity properties
@@ -137,14 +137,14 @@ function Restore-AzIdentityAssignments(
         if ($toggleSystemAssigned)
         {
             $payloadResource.identity.type = Add-SystemAssignedIdentityType -IdentityType $payloadResource.identity.type
-            $response = Invoke-AzRestMethod -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
+            $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
     
             return Get-AzSystemAssignedIdentity -Scope $Resource.id | ConvertTo-IdentityModel
         }
         elseif ($tempUserAssigned)
         {
             $payloadResource.identity.userAssignedIdentities[$tempUaIdentityId] = $null
-            $response = Invoke-AzRestMethod -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
+            $response = Invoke-AzRestMethodWithRetry -Method $httpMethod -Path $path -Payload $(ConvertTo-Json $payloadResource -Depth 3)
             return $null
         }
     }
@@ -158,7 +158,7 @@ function Restore-AzIdentityAssignments(
     }
     else {
         # TODO: What else could go wrong?
-        # Should probably wrap all these Invoke-AzRestMethod calls in a retry handler
+        # We already wrap all these Invoke-AzRestMethod calls in a retry handler
         #   for 5xx and other retry-able error codes
     }
 }

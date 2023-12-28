@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    PS Module with multiple Az Rest Method utilities
+    PS Module with multiple utility functions
 #>
 
 function Split-ResourceProviderAndType([string] $providerNamespaceAndType)
@@ -43,7 +43,7 @@ function Test-SubscriptionOwnership ([string] $SubscriptionId)
 
 function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $ResourceType)
 {
-    $providerResponse = Invoke-AzRestMethod -Path "/providers/$($ResourceProvider)?api-version=2023-07-01"
+    $providerResponse = Invoke-AzRestMethodWithRetry -Path "/providers/$($ResourceProvider)?api-version=2023-07-01"
     $provider = ConvertFrom-Json $providerResponse.Content
     $resourceTypeDefinition = $provider.resourceTypes | ? { $ResourceType -eq $_.resourceType }
 
@@ -80,11 +80,11 @@ function Format-AzResourceDefinition(
 {
     if ($PSBoundParameters.ContainsKey("ResourcePath"))
     {
-        $response = Invoke-AzRestMethod -Method GET -Path $ResourcePath
+        $response = Invoke-AzRestMethodWithRetry -Method GET -Path $ResourcePath
     }
     elseif ($PSBoundParameters.ContainsKey("Resource")) {
         $apiVersions = Get-AzApiVersionsForProvider -ResourceProvider $Resource.ResourceProvider -ResourceType $Resource.ResourceType
-        $response = Invoke-AzRestMethod -Method GET -ApiVersion $apiVersions.latestOrDefault -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
+        $response = Invoke-AzRestMethodWithRetry -Method GET -ApiVersion $apiVersions.latestOrDefault -ResourceGroupName $resource.resourceGroupName -Name $resource.name -ResourceProviderName $resource.resourceProvider -ResourceType $resource.resourceType 
     }
     else
     {

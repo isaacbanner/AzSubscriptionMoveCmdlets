@@ -87,7 +87,7 @@ function Update-AkvAcessPolicy ($tenantId, $Akv, $PrincipalIdMapping) {
         }
     }
 
-    Invoke-AzRestMethod -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
+    Invoke-AzRestMethodWithRetry -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
 }
 
 # Update-AzureKeyVaultTenantId -TenantId "3d1e2be9-a10a-4a0c-8380-7ce190f98ed9"
