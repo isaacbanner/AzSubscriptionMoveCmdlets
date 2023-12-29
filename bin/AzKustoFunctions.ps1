@@ -72,7 +72,7 @@ function Restore-AzKustoPrincipalAssignments(
     [hashtable] $PrincipalIdMapping)
 {
     $KustoClusters | % {
-        Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.Name)" 
+        Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.ClusterName)" 
         $newAssignments = @()
 
         $KustoClusters.ClusterPrincipalAssignments | ? {
@@ -83,11 +83,11 @@ function Restore-AzKustoPrincipalAssignments(
             $newAssignments += New-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role
         }
 
-        Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.Name)" -Completed
+        Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.ClusterName)" -Completed
 
         for($i = 0; $i -lt $KustoClusters.DatabasePrincipalAssignments.Count; $i++)
         {
-            Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.Name)" -PercentComplete ($i * 100.0 / $KustoClusters.DatabasePrincipalAssignments.Count)
+            Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -PercentComplete ($i * 100.0 / $KustoClusters.DatabasePrincipalAssignments.Count)
 
             $KustoClusters.DatabasePrincipalAssignments[$i] | ? {
                 $PrincipalIdMapping.Keys -contains $_.PrincipalId
@@ -97,6 +97,6 @@ function Restore-AzKustoPrincipalAssignments(
             }
         }
 
-        Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.Name)" -Completed
+        Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -Completed
     }
 }
