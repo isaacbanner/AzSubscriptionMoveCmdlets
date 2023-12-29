@@ -40,7 +40,7 @@ function Get-AzKustoClusters()
         $databasePrincipalAssignments = $databaseNames | % {
             # Oh yeah and we have to do it for principal assignment names too, clobber everything.
             $databaseName = $_
-            @{ $_ = @(Get-AzKustoDatabasePrincipalAssignment -ClusterName $clusterName -ResourceGroupName $clusterRgName -DatabaseName $_ | ? {
+            @{ $_ = Get-AzKustoDatabasePrincipalAssignment -ClusterName $clusterName -ResourceGroupName $clusterRgName -DatabaseName $_ | ? {
                 "App" -eq $_.PrincipalType
             } | % {
                 [PSCustomObject]@{
@@ -52,7 +52,7 @@ function Get-AzKustoClusters()
                     ResourceGroupName = $clusterRgName
                     Role = $_.Role
                 }
-            })
+            }
         }}
         
         Write-Progress -Activity "Kusto: Get database PrincipalAssignments for $($_.Name)" -Completed
@@ -75,7 +75,7 @@ function Restore-AzKustoPrincipalAssignments(
         Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.ClusterName)" 
         $newAssignments = @()
 
-        $KustoClusters.ClusterPrincipalAssignments | ? {
+        $_.ClusterPrincipalAssignments | ? {
             $PrincipalIdMapping.Keys -contains $_.PrincipalId 
         } | % {
             # Remove the old assignment and recreate for the new service principal object
@@ -85,12 +85,12 @@ function Restore-AzKustoPrincipalAssignments(
 
         Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.ClusterName)" -Completed
 
-        $databaseNames = $KustoClusters.DatabasePrincipalAssignments.Keys
+        $databaseNames = $_.DatabasePrincipalAssignments.Keys
         for($i = 0; $i -lt $databaseNames.Count; $i++)
         {
             Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -PercentComplete ($i * 100.0 / $databaseNames.Count)
 
-            $KustoClusters.DatabasePrincipalAssignments[$databaseNames[$i]] | ? {
+            $_.DatabasePrincipalAssignments[$databaseNames[$i]] | ? {
                 $PrincipalIdMapping.Keys -contains $_.PrincipalId
             } | % {
                 Remove-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName
