@@ -5,7 +5,7 @@
         for the same.
 #>
 
-function Get-AllKustoClusters()
+function Get-AzKustoClusters()
 {
     $armClusters = Get-AzResource -ResourceType Microsoft.Kusto/clusters
 
@@ -55,7 +55,7 @@ function Get-AllKustoClusters()
             })
         }}
         
-        Write-Progress -Activity "Fetching database principal assignments for kusto cluster $_.Name" -Completed
+        Write-Progress -Activity "Kusto: Get database PrincipalAssignments for $($_.Name)" -Completed
 
         [PSCustomObject]@{
             ClusterName = $clusterName
@@ -65,4 +65,35 @@ function Get-AllKustoClusters()
         }
     })
 
+}
+
+function Restore-AzKustoPrincipalAssignments(
+    [PsCustomObject[]] $KustoClusters,
+    [hashtable] $PrincipalIdMapping)
+{
+    Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.Name)" 
+
+    $KustoClusters.ClusterPrincipalAssignments | ? {
+        $PrincipalIdMapping -contains $_.PrincipalId 
+    } | % {
+        # Remove the old assignment and recreate for the new service principal object
+        Remove-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName
+        New-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role
+    }
+
+    Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.Name)" -Completed
+
+    for($i = 0; $i -lt $KustoClusters.DatabasePrincipalAssignments.Count; $i++)
+    {
+        Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.Name)" -PercentComplete ($i * 100.0 / $KustoClusters.DatabasePrincipalAssignments.Count)
+
+        $KustoClusters.DatabasePrincipalAssignments[$i] | ? {
+            $PrincipalIdMapping -contains $_.PrincipalId
+        } | % {
+            Remove-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName
+            New-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role
+        }
+    }
+
+    Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.Name)" -Completed
 }

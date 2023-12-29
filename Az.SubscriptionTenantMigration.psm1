@@ -56,7 +56,7 @@ function Backup-AzIdentityAndRbac(
     $keyVaults = Get-AllAzureKeyVaults
 
     # backup Kusto configuration
-    $kustoClusters = Get-AllKustoClusters
+    $kustoClusters = Get-AzKustoClusters
 
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
@@ -138,6 +138,7 @@ function Restore-AzIdentityAndRbac(
         $RoleAssignments = $BackupConfig.RoleAssignments
         $RoleDefinitions = $BackupConfig.RoleDefinitions
         $KeyVaults = $BackupConfig.KeyVaults
+        $KustoClusters = $BackupConfig.KustoClusters
         $BackupTenantId = $BackupConfig.BackupTenantId
     }
     elseif ($storageConfig)
@@ -149,6 +150,7 @@ function Restore-AzIdentityAndRbac(
         $RoleAssignments = @(Get-MigrationData -Config $storageConfig -Identifier "roleAssignments")
         $RoleDefinitions = @(Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions")
         $KeyVaults = @(Get-MigrationData -Config $storageConfig -Identifier "keyVaults")
+        $KustoClusters = @(Get-MigrationData -Config $storageConfig -Identifier "kustoClusters")
         $BackupTenantId = @(Get-MigrationData -Config $storageConfig -Identifier "backupTenantId")
     }
     else {
@@ -166,6 +168,9 @@ function Restore-AzIdentityAndRbac(
     # Reset keyvault to new tenantId and restore access policies for 1P apps
     Update-AzureKeyVaultTenantId -TenantId $TenantId -AllAkvs $KeyVaults
     Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $firstPartyOidMap
+
+    # TODO: Does Kusto need to be reset after a tenant migration or is it good to go?
+    Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $firstPartyOidMap
 
     # Create temp identity for UA-only resources
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
@@ -192,6 +197,7 @@ function Restore-AzIdentityAndRbac(
 
     # Restore local access policies for UA identities
     Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $userAssignedOidMap
+    Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $userAssignedOidMap
 
     # Restore FIC on new UA objects
     $Fics | % {
@@ -212,6 +218,7 @@ function Restore-AzIdentityAndRbac(
     
     # Restore local access policies for SA identities
     Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $systemAssignedMap
+    Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $systemAssignedMap
 
     # Clean up temp UA identity
     Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
