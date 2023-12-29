@@ -4,6 +4,7 @@
     Includes tooling to backup identity and RBAC configuration then restore that configuration in the new tenant.
 #>
 
+. $PSScriptRoot\bin\AzFirstPartyAppsFuctions.ps1
 . $PSScriptRoot\bin\AzIdentityBackupFunctions.ps1
 . $PSScriptRoot\bin\AzIdentityRestoreFunctions.ps1
 . $PSScriptRoot\bin\AzKeyVaultFunctions.ps1

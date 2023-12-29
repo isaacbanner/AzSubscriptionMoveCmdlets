@@ -1,3 +1,9 @@
+<#
+.SYNOPSIS
+    Functions to get 1P app registrations in a tenant and 
+    build a mapping between oids post-migration.
+#>
+
 function Get-AzFirstPartyApps()
 {
     Write-Progress -Activity "Reading all Microsoft application registrations." 
