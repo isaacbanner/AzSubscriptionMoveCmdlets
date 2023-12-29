@@ -18,7 +18,7 @@ function Get-AzFirstPartyPrincipalIdMapping ([PsCustomObject[]] $FirstPartyApps)
 
     for ($i=0; $i -lt $FirstPartyApps.Count; $i++)
     {
-        Write-Progress -Activity "Building objectId map for Microsoft applications." -PercentComplete $(100.0 * $i / $FirstPartyApps.Count)
+        Write-Progress -Activity "Building objectId map for Microsoft applications." -PercentComplete $($i * 100.0 / $FirstPartyApps.Count)
         if(-not $FirstPartyApps[$i].is1pApp)
         {
             Write-Error "Application $($FirstPartyApps[$i].Name) is not recognized as a Microsoft-owned application, skipping. Please verify your backup data has not been subject to tampering."
