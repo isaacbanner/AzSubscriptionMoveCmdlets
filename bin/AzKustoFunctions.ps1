@@ -89,8 +89,8 @@ function Restore-AzKustoPrincipalAssignments(
         for($i = 0; $i -lt $databaseNames.Count; $i++)
         {
             Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -PercentComplete ($i * 100.0 / $databaseNames.Count)
-
-            $_.DatabasePrincipalAssignments[$databaseNames[$i]] | ? {
+            $databasePrincipalAssignments = $_.DatabasePrincipalAssignments[$($databaseNames[$i])]
+            $databasePrincipalAssignments | ? {
                 $PrincipalIdMapping.Keys -contains $_.PrincipalId
             } | % {
                 Remove-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName
