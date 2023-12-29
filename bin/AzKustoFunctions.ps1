@@ -83,8 +83,6 @@ function Restore-AzKustoPrincipalAssignments(
             $newAssignments += New-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role
         }
 
-        Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.ClusterName)" -Completed
-
         $databaseNames = $_.DatabasePrincipalAssignments.Keys
         for($i = 0; $i -lt $databaseNames.Count; $i++)
         {
