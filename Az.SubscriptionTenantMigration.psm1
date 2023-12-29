@@ -4,10 +4,11 @@
     Includes tooling to backup identity and RBAC configuration then restore that configuration in the new tenant.
 #>
 
-. $PSScriptRoot\bin\AzFirstPartyAppsFuctions.ps1
+. $PSScriptRoot\bin\AzFirstPartyAppsFunctions.ps1
 . $PSScriptRoot\bin\AzIdentityBackupFunctions.ps1
 . $PSScriptRoot\bin\AzIdentityRestoreFunctions.ps1
 . $PSScriptRoot\bin\AzKeyVaultFunctions.ps1
+. $PSScriptRoot\bin\AzKustoFunctions.ps1
 . $PSScriptRoot\bin\AzRbacFunctions.ps1
 . $PSScriptRoot\bin\CommonTools.ps1
 . $PSScriptRoot\bin\DataStorage.ps1
@@ -54,6 +55,9 @@ function Backup-AzIdentityAndRbac(
     # backup AKV configuration
     $keyVaults = Get-AllAzureKeyVaults
 
+    # backup Kusto configuration
+    $kustoClusters = Get-AllKustoClusters
+
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
         $storageConfig = [StorageConfig]@{
@@ -77,6 +81,7 @@ function Backup-AzIdentityAndRbac(
         $roleAssignments | Set-MigrationData -Config $storageConfig -Identifier "roleAssignments" -Force:$Force
         $roleDefinitions | Set-MigrationData -Config $storageConfig -Identifier "roleDefinitions" -Force:$Force
         $keyVaults | Set-MigrationData -Config $storageConfig -Identifier "keyVaults" -Force:$Force
+        $kustoClusters | Set-MigrationData -Config $storageConfig -Identifier "kustoClusters" -Force:$Force
         $TenantId | Set-MigrationData -Config $storageConfig - Identifier "backupTenantId" -Force:$Force 
     }
 
@@ -88,6 +93,7 @@ function Backup-AzIdentityAndRbac(
         RoleAssignments = $roleAssignments
         RoleDefinitions = $roleDefinitions
         KeyVaults = $keyVaults
+        KustoClusters = $kustoClusters
         BackupTenantId = $TenantId
     }
 }
