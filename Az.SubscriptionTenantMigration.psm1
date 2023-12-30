@@ -4,12 +4,16 @@
     Includes tooling to backup identity and RBAC configuration then restore that configuration in the new tenant.
 #>
 
+Import-Module Az
+
 . $PSScriptRoot\bin\AzFirstPartyAppsFunctions.ps1
 . $PSScriptRoot\bin\AzIdentityBackupFunctions.ps1
 . $PSScriptRoot\bin\AzIdentityRestoreFunctions.ps1
 . $PSScriptRoot\bin\AzKeyVaultFunctions.ps1
 . $PSScriptRoot\bin\AzKustoFunctions.ps1
 . $PSScriptRoot\bin\AzRbacFunctions.ps1
+. $PSScriptRoot\bin\AzRestMethodTools.ps1
+. $PSScriptRoot\bin\AzSqlFunctions.ps1
 . $PSScriptRoot\bin\CommonTools.ps1
 . $PSScriptRoot\bin\DataStorage.ps1
 
@@ -58,6 +62,9 @@ function Backup-AzIdentityAndRbac(
     # backup Kusto configuration
     $kustoClusters = Get-AzKustoClusters
 
+    # backup SQL configuration
+    $sqlResources = Get-AzSqlResources
+
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
         $storageConfig = [StorageConfig]@{
@@ -82,6 +89,7 @@ function Backup-AzIdentityAndRbac(
         $roleDefinitions | Set-MigrationData -Config $storageConfig -Identifier "roleDefinitions" -Force:$Force
         $keyVaults | Set-MigrationData -Config $storageConfig -Identifier "keyVaults" -Force:$Force
         $kustoClusters | Set-MigrationData -Config $storageConfig -Identifier "kustoClusters" -Force:$Force
+        $sqlResources | Set-MigrationData -Config $storageConfig -Identifier "sqlResources" -Force:$Force
         $TenantId | Set-MigrationData -Config $storageConfig - Identifier "backupTenantId" -Force:$Force 
     }
 
@@ -94,6 +102,7 @@ function Backup-AzIdentityAndRbac(
         RoleDefinitions = $roleDefinitions
         KeyVaults = $keyVaults
         KustoClusters = $kustoClusters
+        SqlResources = $sqlResources
         BackupTenantId = $TenantId
     }
 }
@@ -139,6 +148,7 @@ function Restore-AzIdentityAndRbac(
         $RoleDefinitions = $BackupConfig.RoleDefinitions
         $KeyVaults = $BackupConfig.KeyVaults
         $KustoClusters = $BackupConfig.KustoClusters
+        $SqlResources = $BackupConfig.SqlResources
         $BackupTenantId = $BackupConfig.BackupTenantId
     }
     elseif ($storageConfig)
@@ -151,6 +161,7 @@ function Restore-AzIdentityAndRbac(
         $RoleDefinitions = @(Get-MigrationData -Config $storageConfig -Identifier "roleDefinitions")
         $KeyVaults = @(Get-MigrationData -Config $storageConfig -Identifier "keyVaults")
         $KustoClusters = @(Get-MigrationData -Config $storageConfig -Identifier "kustoClusters")
+        $SqlResources =  @(Get-MigrationData -Config $storageConfig -Identifier "sqlResources")
         $BackupTenantId = @(Get-MigrationData -Config $storageConfig -Identifier "backupTenantId")
     }
     else {
@@ -171,6 +182,8 @@ function Restore-AzIdentityAndRbac(
 
     # TODO: Does Kusto need to be reset after a tenant migration or is it good to go?
     Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $firstPartyOidMap
+
+    # TODO: Restore SQL MI and 1PA  assignments
 
     # Create temp identity for UA-only resources
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
@@ -198,6 +211,7 @@ function Restore-AzIdentityAndRbac(
     # Restore local access policies for UA identities
     Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $userAssignedOidMap
     Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $userAssignedOidMap
+    # TODO: Restore SQL 
 
     # Restore FIC on new UA objects
     $Fics | % {
@@ -219,6 +233,7 @@ function Restore-AzIdentityAndRbac(
     # Restore local access policies for SA identities
     Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $systemAssignedMap
     Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $systemAssignedMap
+    # TODO: Restore SQL
 
     # Clean up temp UA identity
     Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name

@@ -53,11 +53,15 @@ Copyright = '(c) Microsoft. All rights reserved.'
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
     @{
-        ModuleName='Az'
-    },
-    @{
         ModuleName='Az.ResourceGraph'
         ModuleVersion='0.13.0'
+    },
+    @{
+        ModuleName='Az.Sql'
+        ModuleVersion='4.10.0'
+    },
+    @{
+        ModuleName='Az'
     }
 )
 

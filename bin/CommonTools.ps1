@@ -49,6 +49,16 @@ function Test-SubscriptionOwnership ([string] $SubscriptionId)
     return $ownerAssignments -gt 0
 }
 
+function Select-AzAdServicePrincipal([string] $ApplicationId)
+{
+    try {
+        return Get-AzADServicePrincipal -ApplicationId $ApplicationId
+    } 
+    catch {
+        return $null
+    }
+}
+
 function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $ResourceType)
 {
     $providerResponse = Invoke-AzRestMethodWithRetry -Path "/providers/$($ResourceProvider)?api-version=2023-07-01"
@@ -170,7 +180,7 @@ function ConvertTo-ResourceModel([Parameter(ValueFromPipeline=$true)] [PsCustomO
         identityType = $argResource.identity.type
         objectId = $argResource.identity.principalId
         userAssignedIdentities = Select-HashTable -Hashtable $userAssignedIdentities -StringToFilter $SubscriptionId
-        resourceGroupName = $argResource.resourceGroup
+        resourceGroupName = if($argResource.resourceGroup) {$argResource.resourceGroup} else {$argResource.resourceGroupName}
     }
 }
 

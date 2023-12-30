@@ -1,0 +1,89 @@
+<#
+.SYNOPSIS
+    Functions to backup SQL local users/auth and restore post-migration
+#>
+
+try {
+    Import-Module SqlServer
+}
+catch {
+    Write-Warning "SqlServer module not available, only Active Directory administrator information will be backed up.\nFor full functionality, first run 'Install-Module SqlServer'."
+}
+
+function ConvertTo-AzSqlServer(
+    [Parameter(ValueFromPipeline=$true)] [Microsoft.Azure.Commands.ResourceManager.Cmdlets.SdkModels.PSResource] $ArmResource)
+{
+    if ("Microsoft.Sql/servers" -eq $ArmResource.ResourceType) 
+    { 
+        Get-AzSqlServer -ResourceGroupName $ArmResource.ResourceGroupName -ServerName $ArmResource.Name 
+    }
+    else {
+        return $null
+    }
+}
+
+function Invoke-AzSqlCmd(
+    [Microsoft.Azure.Commands.Sql.Server.Model.AzureSqlServerModel] $SqlServer, 
+    [string] $Query,
+    [Parameter(Mandatory=$false)] $Database)
+{
+    $token = Get-AzAccessToken -ResourceUrl "https://database.windows.net"
+
+    if ($PSBoundParameters.ContainsKey("Database"))
+    {
+        Invoke-Sqlcmd -ServerInstance $SqlServer.FullyQualifiedDomainName -Database $Database -AccessToken $token.Token -Query $Query
+    }
+    else {
+        Invoke-Sqlcmd -ServerInstance $SqlServer.FullyQualifiedDomainName -AccessToken $token.Token -Query $Query
+    }
+}
+
+function Get-AzSqlResources()
+{
+    $sqlServers = Get-AzResource -ResourceType "Microsoft.SQL/servers"
+    $serverAdmins = @{}
+
+    $sqlServers | % {
+        $dbAdmin = Get-AzSqlServerActiveDirectoryAdministrator -ServerName $_.Name -ResourceGroupName $_.ResourceGroupName
+
+        # Please don't ask me why SQL puts the MI appId in a field named ObjectId.
+        $adminSpObject = Select-AzAdServicePrincipal -ApplicationId $dbAdmin.ObjectId
+        if ("ManagedIdentity" -eq $adminSpObject.ServicePrincipalType -or 
+            "f8cdef31-a31e-4b4a-93e4-5f571e91255a" -eq $adminSpObject.appOwnerOrganizationId)
+        {
+            # TODO: Trim down these objects
+            $serverAdmins += @{$_.Id = $adminSpObject}
+        }
+    }
+
+    if (Get-Module -ListAvailable -Name SqlServer)
+    {
+        # TODO: SQL external users oh boy
+    }
+
+    [PSCustomObject]@{
+        Servers = $sqlServers | % {$_ | ConvertTo-ResourceModel}
+        AdminIdentities = $serverAdmins
+    }
+}
+
+function Restore-AzSqlServerActiveDirectoryAdministrators(
+    [PsCustomObject[]] $SqlServers,
+    [hashtable] $ClientIdMapping)
+{
+    $SqlServers.Servers | % {
+        if ($SqlServers.AdminIdentities.Keys -contains $_.Id)
+        {
+            $adminIdentity = $SqlServers.AdminIdentities[$_.Id]
+            if ($ClientIdMapping.Keys -contains $adminIdentity.AppId)
+            {
+                $updatedAdmin = Set-AzSqlServerActiveDirectoryAdministrator -ResourceGroupName $_.ResourceGroupName -ServerName $_.Name -DisplayName $adminIdentity.DisplayName -ObjectId $($ClientIdMapping[$adminIdentity.AppId])
+            }
+        }
+        
+        if (Get-Module -ListAvailable -Name SqlServer)
+        {
+            # TODO: SQL external users oh boy
+        }
+    }
+}
