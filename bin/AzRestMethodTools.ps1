@@ -3,7 +3,7 @@
     PS Module with http utilities
 #>
 
-Invoke-AzRestMethodWithRetry(
+function Invoke-AzRestMethodWithRetry(
     [string] $Path,
     [string] $Method,
     [Parameter(Mandatory=$false)][string] $Payload,
