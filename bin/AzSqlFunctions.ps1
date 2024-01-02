@@ -61,7 +61,7 @@ function Get-AzSqlResources()
         }
     }
 
-    Write-Progress -Activity "Backing up Azure SQL resources" -Completed
+    Write-Progress -Activity "Backing up Azure SQL resources" -PercentComplete 100
 
     if (Get-Module -ListAvailable -Name SqlServer)
     {
@@ -92,7 +92,7 @@ function Restore-AzSqlServerActiveDirectoryAdministrators(
             }
         }
 
-        Write-Progress -Activity "Restoring Azure SQL configuration" -Completed
+        Write-Progress -Activity "Restoring Azure SQL configuration" -PercentComplete 100
         
         if (Get-Module -ListAvailable -Name SqlServer)
         {

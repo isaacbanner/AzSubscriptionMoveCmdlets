@@ -26,7 +26,7 @@ function Backup-AzIdentityAndRbac(
     [switch]$Force
 )
 {
-    Write-Progress "Getting user login context for subscription $Subscription and tenant $TenantId"
+    Write-Progress -Activity "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
@@ -36,7 +36,7 @@ function Backup-AzIdentityAndRbac(
         return
     }
 
-    Write-Progress "Backing up identity and authorization configuration for subscription $Subscription"
+    Write-Progress -Activity "Backing up identity and authorization configuration for subscription $Subscription"
 
     # backup identities, resources, and FIC
     $identities = Get-AllIdentitiesAtSubscriptionScope -Subscription $Subscription
@@ -118,7 +118,7 @@ function Restore-AzIdentityAndRbac(
     [Parameter(Mandatory=$false)][string] $AzStorageAccountName
 )
 {
-    Write-Progress "Getting user login context for subscription $Subscription and tenant $TenantId"
+    Write-Progress -Activity "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
@@ -127,7 +127,7 @@ function Restore-AzIdentityAndRbac(
         return 
     }
 
-    Write-Progress "Restoring identity and authorization configuration for subscription $Subscription"
+    Write-Progress -Activity "Restoring identity and authorization configuration for subscription $Subscription"
 
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
@@ -196,7 +196,6 @@ function Restore-AzIdentityAndRbac(
     $identityName = "TempWorkflowIdentity-" + [Guid]::NewGuid().ToString()
     $tempRg = New-AzResourceGroup -Name $rgName -Location "westus"
     $tempUaIdentity = New-AzUserAssignedIdentity -ResourceGroupName $rgName -Name $identityName -Location "westus"
-    Write-Progress -Activity "Creating temporary configuration for restore process" -Completed
 
     $userAssignedAidMap = @{}
     $userAssignedOidMap = @{}
@@ -214,8 +213,6 @@ function Restore-AzIdentityAndRbac(
         $userAssignedAidMap[$oldUa.clientId] = $newUa.clientId
     }
 
-    Write-Progress -Activity "Restoring user-assigned identities" -Completed
-
     # Restore role assignments on UA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedOidMap
 
@@ -231,8 +228,6 @@ function Restore-AzIdentityAndRbac(
         Restore-AzSingleFederatedCredentialIdentity -FederatedIdentityCredential $Fics[$i] -BackupTenantId $BackupTenantId -RestoreTenantId $TenantId
     }
 
-    Write-Progress -Activity "Restoring FIC configuration for user-assigned identities" -Completed
-
     # Restore SA identities and UA identity assignments
     for ($i=0; $i -lt $Resources.Count; $i++)
     {
@@ -244,8 +239,6 @@ function Restore-AzIdentityAndRbac(
             $systemAssignedMap[$oldSa.objectId] = $newSa.objectId
         }
     }
-
-    Write-Progress -Activity "Restoring system-assigned identities, identity assignments" -Completed
 
     # Restore role assignments on SA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $systemAssignedMap

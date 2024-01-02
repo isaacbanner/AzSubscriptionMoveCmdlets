@@ -55,7 +55,7 @@ function Get-AzKustoClusters()
             }
         }}
         
-        Write-Progress -Activity "Kusto: Get database PrincipalAssignments for $($_.Name)" -Completed
+        Write-Progress -Activity "Kusto: Get database PrincipalAssignments for $($_.Name)" -PercentComplete 100
 
         [PSCustomObject]@{
             ClusterName = $clusterName
@@ -98,6 +98,6 @@ function Restore-AzKustoPrincipalAssignments(
             }
         }
 
-        Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -Completed
+        Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -PercentComplete 100
     }
 }

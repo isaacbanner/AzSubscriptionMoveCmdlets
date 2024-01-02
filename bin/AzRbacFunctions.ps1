@@ -7,7 +7,6 @@ function Get-RoleAssignmentsForPrincipals {
     )
     Write-Progress -Activity "Reading role assignments for application principals"
     $roleAssignments = Get-AzRoleAssignment -Scope "/subscriptions/$SubscriptionId" | Where-Object { $PrincipalIds -contains $_.ObjectId } | Where-Object { $_.Scope -match "/subscriptions/$SubscriptionId"}
-    Write-Progress -Activity "Reading role assignments for application principals" -Completed
 
     return $roleAssignments;
 }
@@ -19,6 +18,7 @@ function Get-CustomRoleDefinitionsForRoleAssignments {
         [string[]]$roleDefinitionIds
     )
     $customRoleDefinitions = @()
+    Write-Progress -Activity "Backing up custom roles"
 
     for ($i=0; $i -lt $roleDefinitionIds.Count; $i++) {
         Write-Progress -Activity "Backing up custom roles" -PercentComplete $((100.0 * $i) / $roleDefinitionIds.Count)
@@ -29,7 +29,7 @@ function Get-CustomRoleDefinitionsForRoleAssignments {
         }
     }
 
-    Write-Progress -Activity "Backing up custom roles" -Completed
+    Write-Progress -Activity "Backing up custom roles" -PercentComplete 100
     return $customRoleDefinitions
 }
 
@@ -42,9 +42,10 @@ function Add-RoleAssignments {
         [Parameter(Mandatory = $true)]
         [System.Collections.Hashtable]$PrincipalIdMapping
     )
+    Write-Progress -Activity "Restoring role assignments for application principals" 
 
     for ($i=0; $i -lt $RoleAssignments.Count; $i++) {
-        Write-Progress "Restoring role assignments for application principals" -PercentComplete $((100.0 * $i) / $RoleAssignments.Count)
+        Write-Progress -Activity "Restoring role assignments for application principals" -PercentComplete $((100.0 * $i) / $RoleAssignments.Count)
         
         $roleAssignment = $RoleAssignments[$i]
         $principalId = $roleAssignment.ObjectId;
@@ -76,7 +77,7 @@ function Add-RoleAssignments {
         }
     }
 
-    Write-Progress "Restoring role assignments for application principals" -Completed
+    Write-Progress -Activity "Restoring role assignments for application principals" -PercentComplete 100
 }
 
 
@@ -87,9 +88,10 @@ function Add-RoleDefinitions {
         [Parameter(Mandatory = $true)]
         [Microsoft.Azure.Commands.Resources.Models.Authorization.PSRoleDefinition[]]$RoleDefinitions
     )
+    Write-Progress -Activity "Restoring custom role definitions"
 
     for ($i=0; $i -lt $RoleDefinitions.Count; $i++) {
-        Write-Progress "Restoring custom role definitions" -PercentComplete $((100.0 * $i) / $RoleDefinitions.Count)
+        Write-Progress -Activity "Restoring custom role definitions" -PercentComplete $((100.0 * $i) / $RoleDefinitions.Count)
 
         $item = $RoleDefinitions[$i]
         $existingRole = Get-AzRoleDefinition -Name $item.Name;
@@ -141,7 +143,7 @@ function Add-RoleDefinitions {
         }
     }
 
-    Write-Progress "Restoring custom role definitions" -Completed
+    Write-Progress -Activity "Restoring custom role definitions" -PercentComplete 100
 }
 
 function Compare-Arrays($a1, $b1) {

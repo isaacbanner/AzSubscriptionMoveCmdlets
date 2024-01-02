@@ -7,18 +7,22 @@ function Get-AllAzureKeyVaults () {
     $allAkvs = Get-AzKeyVault
     $resultAkvList = New-Object System.Collections.ArrayList
 
+    Write-Progress -Activity "Backing up Azure Keyvault configuration"
+
     for ($i=0; $i -lt $allAkvs.Count; $i++) {
         Write-Progress -Activity "Backing up Azure Keyvault configuration" -PercentComplete $((100.0 * $i) / $allAkvs.Count)
         $kv = Get-AzKeyVault -ResourceGroupName $allAkvs[$i].ResourceGroupName -VaultName $allAkvs[$i].VaultName
         $resultAkvList.Add($kv) | out-null
     }
 
-    Write-Progress -Activity "Backing up Azure Keyvault configuration" -Completed
+    Write-Progress -Activity "Backing up Azure Keyvault configuration" -PercentComplete 100
     return $resultAkvList
 }
 
 
 function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
+    Write-Progress -Activity "Resetting KeyVault to enable access policies" 
+
     for ($i=0; $i -lt $AllAkvs.Count; $i++) {
         Write-Progress -Activity "Resetting KeyVault to enable access policies" -PercentComplete $((100.0 * $i) / $AllAkvs.Count)
         $vault = Get-AzResource -ResourceId $AllAkvs[$i].ResourceId -ExpandProperties
@@ -29,16 +33,18 @@ function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
         Set-AzResource -ResourceId $vault.ResourceId -Properties $vault.Properties -Force | Out-Null
     }
 
-    Write-Progress -Activity "Resetting KeyVault to enable access policies" -Completed
+    Write-Progress -Activity "Resetting KeyVault to enable access policies" -PercentComplete 100
 }
 
 function Restore-AzureKeyVaultAccessPolicies ($TenantId, $AllAkvs, $PrincipalIdMapping) {
+    Write-Progress -Activity "Restoring KeyVault access policies" 
+
     for ($i=0; $i -lt $AllAkvs.Count; $i++) {
         Write-Progress -Activity "Restoring KeyVault access policies" -PercentComplete $((100.0 * $i) / $AllAkvs.Count)
-        Update-AkvAcessPolicy -tenantId $TenantId -akv $AllAkvs[$i] -PrincipalIdMapping $PrincipalIdMapping
+        Update-AkvAcessPolicy -tenantId $TenantId -akv $AllAkvs[$i] -PrincipalIdMapping $PrincipalIdMapping | Out-Null
     }
 
-    Write-Progress -Activity "Restoring KeyVault access policies" -Completed
+    Write-Progress -Activity "Restoring KeyVault access policies" -PercentComplete 100
 }
 
 function Update-AkvAcessPolicy ($tenantId, $Akv, $PrincipalIdMapping) {
