@@ -26,7 +26,7 @@ function Backup-AzIdentityAndRbac(
     [switch]$Force
 )
 {
-    Write-Output "Getting user login context for subscription $Subscription and tenant $TenantId"
+    Write-Progress "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
@@ -36,7 +36,7 @@ function Backup-AzIdentityAndRbac(
         return
     }
 
-    Write-Output "Backing up identity and authorization configuration for subscription $Subscription"
+    Write-Progress "Backing up identity and authorization configuration for subscription $Subscription"
 
     # backup identities, resources, and FIC
     $identities = Get-AllIdentitiesAtSubscriptionScope -Subscription $Subscription
@@ -118,16 +118,16 @@ function Restore-AzIdentityAndRbac(
     [Parameter(Mandatory=$false)][string] $AzStorageAccountName
 )
 {
-    Write-Output "Getting user login context for subscription $Subscription and tenant $TenantId"
+    Write-Progress "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
     {
-        Write-Output "Logged-in user does not have owner permissions on the requested subscription. Exiting."
+        Write-Error "Logged-in user does not have owner permissions on the requested subscription. Exiting."
         return 
     }
 
-    Write-Output "Restoring identity and authorization configuration for subscription $Subscription"
+    Write-Progress "Restoring identity and authorization configuration for subscription $Subscription"
 
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
