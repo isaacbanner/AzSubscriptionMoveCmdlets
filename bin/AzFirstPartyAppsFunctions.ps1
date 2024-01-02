@@ -33,7 +33,5 @@ function Get-AzFirstPartyPrincipalIdMapping ([PsCustomObject[]] $FirstPartyApps)
         }
     }
 
-    Write-Progress -Activity "Reading all Microsoft application registrations." -PercentComplete 100
-
     return $PrincipalIdMapping
 }

@@ -35,16 +35,13 @@ function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
 
 function Restore-AzureKeyVaultAccessPolicies ($TenantId, $AllAkvs, $PrincipalIdMapping) {
     Write-Progress -Activity "Restoring KeyVault access policies" 
-
-    for ($i=0; $i -lt $AllAkvs.Count; $i++) {
-        Update-AkvAcessPolicy -tenantId $TenantId -akv $AllAkvs[$i] -PrincipalIdMapping $PrincipalIdMapping | Out-Null
-    }
+    $AllAkvs | % {Update-AkvAcessPolicy -tenantId $TenantId -akv $_ -PrincipalIdMapping $PrincipalIdMapping | Out-Null }
 }
 
 function Update-AkvAcessPolicy ($TenantId, $Akv, $PrincipalIdMapping) {
     # Appending accessPolicies resource type, operation kind (add) and API version to akv resource id
     $path = $Akv.ResourceId + "/accessPolicies/add?api-version=2022-07-01"
-    $accessPolicies = $Akv.AccessPolicies | ? {
+    $accessPolicies = @($Akv.AccessPolicies | ? {
         $PrincipalIdMapping.Keys -contains $_.ObjectId
     } | % {
         [PSCustomObject]@{
@@ -57,7 +54,7 @@ function Update-AkvAcessPolicy ($TenantId, $Akv, $PrincipalIdMapping) {
                 storage = $_.PermissionsToStorage
             }
         }
-    }
+    })
 
     $requestBody = [PSCustomObject]@{
         id = $Akv.ResourceId + "/accessPolicies"
