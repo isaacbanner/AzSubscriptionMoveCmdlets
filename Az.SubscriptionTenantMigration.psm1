@@ -182,11 +182,17 @@ function Restore-AzIdentityAndRbac(
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $firstPartyOidMap
 
     # Reset keyvault to new tenantId and restore access policies for 1P apps
-    Update-AzureKeyVaultTenantId -TenantId $TenantId -AllAkvs $KeyVaults
-    Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $firstPartyOidMap
+    if ($KeyVaults.Count -gt 0)
+    {
+        Update-AzureKeyVaultTenantId -TenantId $TenantId -AllAkvs $KeyVaults
+        Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $firstPartyOidMap
+    }
 
     # TODO: Does Kusto need to be reset after a tenant migration or is it good to go?
-    Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $firstPartyOidMap
+    if ($KustoClusters.Count -gt 0)
+    {
+        Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $firstPartyOidMap
+    }
 
     # TODO: Restore SQL MI and 1PA  assignments
 
@@ -217,8 +223,14 @@ function Restore-AzIdentityAndRbac(
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedOidMap
 
     # Restore local access policies for UA identities
-    Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $userAssignedOidMap
-    Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $userAssignedOidMap
+    if ($KeyVaults.Count -gt 0)
+    {
+        Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $userAssignedOidMap
+    }
+    if ($KustoClusters.Count -gt 0)
+    {
+        Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $userAssignedOidMap
+    }
     # TODO: Restore SQL 
 
     # Restore FIC on new UA objects
@@ -244,8 +256,14 @@ function Restore-AzIdentityAndRbac(
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $systemAssignedMap
     
     # Restore local access policies for SA identities
-    Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $systemAssignedMap
-    Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $systemAssignedMap
+    if ($KeyVaults.Count -gt 0)
+    {
+        Restore-AzureKeyVaultAccessPolicies -TenantId $TenantId -AllAkvs $KeyVaults -PrincipalIdMapping $systemAssignedMap
+    }
+    if ($KustoClusters.Count -gt 0)
+    {
+        Restore-AzKustoPrincipalAssignments -KustoClusters $KustoClusters -PrincipalIdMapping $systemAssignedMap
+    }
     # TODO: Restore SQL
 
     # Clean up temp UA identity

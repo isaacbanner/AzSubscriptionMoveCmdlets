@@ -47,40 +47,33 @@ function Restore-AzureKeyVaultAccessPolicies ($TenantId, $AllAkvs, $PrincipalIdM
     Write-Progress -Activity "Restoring KeyVault access policies" -PercentComplete 100
 }
 
-function Update-AkvAcessPolicy ($tenantId, $Akv, $PrincipalIdMapping) {
+function Update-AkvAcessPolicy ($TenantId, $Akv, $PrincipalIdMapping) {
     # Appending accessPolicies resource type, operation kind (add) and API version to akv resource id
     $path = $Akv.ResourceId + "/accessPolicies/add?api-version=2022-07-01"
+    $accessPolicies = $Akv.AccessPolicies | ? {
+        $PrincipalIdMapping.Keys -contains $_.ObjectId
+    } | % {
+        [PSCustomObject]@{
+            objectId = $($PrincipalIdMapping[$_.ObjectId])
+            tenantId = $TenantId
+            permissions = [PSCustomObject]@{
+                keys = $_.PermissionsToKeys
+                secrets = $_.PermissionsToSecrets
+                certificates = $_.PermissionsToCertificates
+                storage = $_.PermissionsToStorage
+            }
+        }
+    }
 
     $requestBody = [PSCustomObject]@{
         id = $Akv.ResourceId + "/accessPolicies"
         type = "Microsoft.KeyVault/vaults/accessPolicies"
         location = $Akv.Location
         properties = [PSCustomObject]@{
-            accessPolicies = New-Object System.Collections.ArrayList
+            accessPolicies = $accessPolicies
         }
     }
 
-    # $requestBody.properties.accessPolicies = New-Object System.Collections.ArrayList
-    foreach ($accessPolicy in $Akv.AccessPolicies) {
-        
-        $objId = $accessPolicy.ObjectId
-        if ($PrincipalIdMapping.ContainsKey($objId)) {
-            $newObjId = $PrincipalIdMapping[$objId];
-
-            $requestBody.properties.accessPolicies.Add(
-                [PSCustomObject]@{
-                    objectId = $newObjId
-                    tenantId = $tenantId
-                    permissions = [PSCustomObject]@{
-                        keys = $accessPolicy.PermissionsToKeys
-                        secrets = $accessPolicy.PermissionsToSecrets
-                        certificates = $accessPolicy.PermissionsToCertificates
-                        storage = $accessPolicy.PermissionsToStorage
-                    }
-                }
-            )
-        }
-    }
-
+    Write-Progress -Activity "Updating access policies for $($Akv.VaultName)"
     Invoke-AzRestMethodWithRetry -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5) | Out-Null
 }
