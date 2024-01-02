@@ -40,11 +40,16 @@ function Invoke-AzSqlCmd(
 
 function Get-AzSqlResources()
 {
+    Write-Progress -Activity "Backing up Azure SQL resources" -PercentComplete 0
+
     $sqlServers = Get-AzResource -ResourceType "Microsoft.SQL/servers"
     $serverAdmins = @{}
 
-    $sqlServers | % {
-        $dbAdmin = Get-AzSqlServerActiveDirectoryAdministrator -ServerName $_.Name -ResourceGroupName $_.ResourceGroupName
+    for ($i=0; $i -lt $sqlServers.Count; $i++)
+    {
+        Write-Progress -Activity "Backing up Azure SQL resources" -PercentComplete $((100.0 * $i) / $sqlServers.Count)
+        $server = $sqlServers[$i]
+        $dbAdmin = Get-AzSqlServerActiveDirectoryAdministrator -ServerName $server.Name -ResourceGroupName $server.ResourceGroupName
 
         # Please don't ask me why SQL puts the MI appId in a field named ObjectId.
         $adminSpObject = Select-AzAdServicePrincipal -ApplicationId $dbAdmin.ObjectId
@@ -52,9 +57,11 @@ function Get-AzSqlResources()
             "f8cdef31-a31e-4b4a-93e4-5f571e91255a" -eq $adminSpObject.appOwnerOrganizationId)
         {
             # TODO: Trim down these objects
-            $serverAdmins += @{$_.Id = $adminSpObject}
+            $serverAdmins += @{$server.Id = $adminSpObject}
         }
     }
+
+    Write-Progress -Activity "Backing up Azure SQL resources" -Completed
 
     if (Get-Module -ListAvailable -Name SqlServer)
     {
@@ -71,15 +78,21 @@ function Restore-AzSqlServerActiveDirectoryAdministrators(
     [PsCustomObject[]] $SqlServers,
     [hashtable] $ClientIdMapping)
 {
-    $SqlServers.Servers | % {
-        if ($SqlServers.AdminIdentities.Keys -contains $_.Id)
+    for ($i=0; $i -lt $SqlServers.Servers.Count; $i++)
+    {
+        Write-Progress -Activity "Restoring Azure SQL configuration" -PercentComplete $((100.0 * $i) / $SqlServers.Servers.Count)
+        $server = $SqlServers.Servers[$i]
+
+        if ($SqlServers.AdminIdentities.Keys -contains $server.Id)
         {
-            $adminIdentity = $SqlServers.AdminIdentities[$_.Id]
+            $adminIdentity = $SqlServers.AdminIdentities[$server.Id]
             if ($ClientIdMapping.Keys -contains $adminIdentity.AppId)
             {
-                $updatedAdmin = Set-AzSqlServerActiveDirectoryAdministrator -ResourceGroupName $_.ResourceGroupName -ServerName $_.Name -DisplayName $adminIdentity.DisplayName -ObjectId $($ClientIdMapping[$adminIdentity.AppId])
+                Set-AzSqlServerActiveDirectoryAdministrator -ResourceGroupName $server.ResourceGroupName -ServerName $server.Name -DisplayName $adminIdentity.DisplayName -ObjectId $($ClientIdMapping[$adminIdentity.AppId]) | Out-Null
             }
         }
+
+        Write-Progress -Activity "Restoring Azure SQL configuration" -Completed
         
         if (Get-Module -ListAvailable -Name SqlServer)
         {

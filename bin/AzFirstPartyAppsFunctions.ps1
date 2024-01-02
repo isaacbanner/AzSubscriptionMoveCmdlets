@@ -9,6 +9,7 @@ function Get-AzFirstPartyApps()
     Write-Progress -Activity "Reading all Microsoft application registrations." 
     $firstPartyApps = Get-AzADServicePrincipal -Filter "appOwnerOrganizationId eq f8cdef31-a31e-4b4a-93e4-5f571e91255a" -Count -ConsistencyLevel "eventual"
     Write-Progress -Activity "Reading all Microsoft application registrations." -Completed
+    
     return @($firstPartyApps | % {ConvertTo-FirstPartyAppModel -Az1PApp $_})
 }
 
@@ -18,7 +19,7 @@ function Get-AzFirstPartyPrincipalIdMapping ([PsCustomObject[]] $FirstPartyApps)
 
     for ($i=0; $i -lt $FirstPartyApps.Count; $i++)
     {
-        Write-Progress -Activity "Building objectId map for Microsoft applications." -PercentComplete $($i * 100.0 / $FirstPartyApps.Count)
+        Write-Progress -Activity "Reading all Microsoft application registrations."  -PercentComplete $($i * 100.0 / $FirstPartyApps.Count)
         if(-not $FirstPartyApps[$i].is1pApp)
         {
             Write-Error "Application $($FirstPartyApps[$i].Name) is not recognized as a Microsoft-owned application, skipping. Please verify your backup data has not been subject to tampering."
@@ -32,8 +33,8 @@ function Get-AzFirstPartyPrincipalIdMapping ([PsCustomObject[]] $FirstPartyApps)
             }
         }
     }
-    
-    Write-Progress -Activity "Building objectId map for Microsoft applications." -Completed
+
+    Write-Progress -Activity "Reading all Microsoft application registrations." -Completed
 
     return $PrincipalIdMapping
 }

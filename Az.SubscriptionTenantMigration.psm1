@@ -26,15 +26,17 @@ function Backup-AzIdentityAndRbac(
     [switch]$Force
 )
 {
-    Write-Progress -Activity "Getting user login context for subscription $Subscription and tenant $TenantId"
+    Write-Output "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
     {
         # TODO: Error behavior
-        Write-Error "Ahhhh!"
+        Write-Error "Logged-in user does not have owner permissions on the requested subscription. Exiting."
         return
     }
+
+    Write-Output "Backing up identity and authorization configuration for subscription $Subscription"
 
     # backup identities, resources, and FIC
     $identities = Get-AllIdentitiesAtSubscriptionScope -Subscription $Subscription
@@ -116,13 +118,16 @@ function Restore-AzIdentityAndRbac(
     [Parameter(Mandatory=$false)][string] $AzStorageAccountName
 )
 {
+    Write-Output "Getting user login context for subscription $Subscription and tenant $TenantId"
     $context = Get-UserContext -Subscription $Subscription -TenantId $TenantId
 
     if (-Not (Test-SubscriptionOwnership -Subscription $context.Subscription.Id))
     {
-        Write-Output "boo"
-        return $null
+        Write-Output "Logged-in user does not have owner permissions on the requested subscription. Exiting."
+        return 
     }
+
+    Write-Output "Restoring identity and authorization configuration for subscription $Subscription"
 
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
@@ -196,14 +201,18 @@ function Restore-AzIdentityAndRbac(
     $systemAssignedMap = @{}
 
     # Delete and recreate UA identities
-    $Identities | % {
-        if ($_.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities")
-        {
-            $newUa = Restore-AzSingleIdentity -Identity $_
-            $userAssignedOidMap[$_.objectId] = $newUa.objectId
-            $userAssignedAidMap[$_.clientId] = $newUa.clientId
-        }
+    $userAssignedIdentities = $Identities | ? { $_.type -eq "Microsoft.ManagedIdentity/userAssignedIdentities" }
+
+    for ($i=0; $i -lt $userAssignedIdentities.Count; $i++)
+    {
+        Write-Progress -Activity "Restoring user-assigned identities" -PercentComplete $((100.0 * $i) / $userAssignedIdentities.Count)
+        $oldUa = $userAssignedIdentities[$i]
+        $newUa = Restore-AzSingleIdentity -Identity $oldUa
+        $userAssignedOidMap[$oldUa.objectId] = $newUa.objectId
+        $userAssignedAidMap[$oldUa.clientId] = $newUa.clientId
     }
+
+    Write-Progress -Activity "Restoring user-assigned identities" -Completed
 
     # Restore role assignments on UA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $userAssignedOidMap
@@ -214,18 +223,27 @@ function Restore-AzIdentityAndRbac(
     # TODO: Restore SQL 
 
     # Restore FIC on new UA objects
-    $Fics | % {
-        Restore-AzSingleFederatedCredentialIdentity -FederatedIdentityCredential $_ -BackupTenantId $BackupTenantId -RestoreTenantId $TenantId
+    for ($i=0; $i -lt $Fics.Count; $i++)
+    {
+        Write-Progress -Activity "Restoring FIC configuration for user-assigned identities" -PercentComplete $((100.0 * $i) / $Fics.Count)
+        Restore-AzSingleFederatedCredentialIdentity -FederatedIdentityCredential $Fics[$i] -BackupTenantId $BackupTenantId -RestoreTenantId $TenantId
     }
 
+    Write-Progress -Activity "Restoring FIC configuration for user-assigned identities" -Completed
+
     # Restore SA identities and UA identity assignments
-    $Resources | % {
-        $newSa = Restore-AzIdentityAssignments -Resource $_ -TempUaIdentityId $tempUaIdentity.Id -UserAssignedOidMap $userAssignedOidMap -UserAssignedAidMap $userAssignedAidMap
+    for ($i=0; $i -lt $Resources.Count; $i++)
+    {
+        Write-Progress -Activity "Restoring system-assigned identities, identity assignments" -PercentComplete $((100.0 * $i) / $Resources.Count)
+        $oldSa = $Resources[$i]
+        $newSa = Restore-AzIdentityAssignments -Resource $oldSa -TempUaIdentityId $tempUaIdentity.Id -UserAssignedOidMap $userAssignedOidMap -UserAssignedAidMap $userAssignedAidMap
         if ($_.identityType -match "SystemAssigned")
         {
-            $systemAssignedMap[$_.objectId] = $newSa.objectId
+            $systemAssignedMap[$oldSa.objectId] = $newSa.objectId
         }
     }
+
+    Write-Progress -Activity "Restoring system-assigned identities, identity assignments" -Completed
 
     # Restore role assignments on SA identities
     Add-RoleAssignments -RoleAssignments $RoleAssignments -PrincipalIdMapping $systemAssignedMap

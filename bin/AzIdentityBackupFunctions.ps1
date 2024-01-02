@@ -20,7 +20,7 @@ function Get-FederatedIdentityCredentialsForUserAssignedIdentities([PsCustomObje
         }
     }
     
-    Write-Progress -Activity "Reading FIC configuration for user-assigned identities" -PercentComplete 100
+    Write-Progress -Activity "Reading FIC configuration for user-assigned identities" -Completed
 
     return $federatedIdentityCredentials
 }
@@ -39,7 +39,7 @@ function Get-AllSystemAssignedIdentitiesAtSubscriptionScope ([string] $Subscript
         $identities += $(Get-AzSystemAssignedIdentity -Scope $argIdentities[$i].id | ConvertTo-IdentityModel)
     }
 
-    Write-Progress -Activity "Reading all system-assigned identities in subscription $Subscription" -PercentComplete 100
+    Write-Progress -Activity "Reading all system-assigned identities in subscription $Subscription" -Completed
 
     return $identities
 }
@@ -48,6 +48,8 @@ function Get-AllIdentitiesAtSubscriptionScope ([string] $Subscription)
 {
     Write-Progress -Activity "Reading all user-assigned identities in subscription $Subscription" 
     $userAssigned = @(Get-AzUserAssignedIdentity -SubscriptionId $Subscription | % {ConvertTo-IdentityModel -AzIdentity $_})
+    
+    Write-Progress -Activity "Reading all user-assigned identities in subscription $Subscription" -Completed
 
     $systemAssigned = @(Get-AllSystemAssignedIdentitiesAtSubscriptionScope -Subscription $Subscription)
     $allIdentities = $systemAssigned + $userAssigned
@@ -60,6 +62,8 @@ function Get-AllIdentityEnabledResources ([string] $Subscription)
     Write-Progress -Activity "Reading all identity enabled resources and assignments in subscription $Subscription"
     $query = $argResourceQuery -f $Subscription
     $ArgResources = Search-AzGraph -Query $query
+
+    Write-Progress -Activity "Reading all identity enabled resources and assignments in subscription $Subscription" -Completed
 
     return $ArgResources | % {
         ConvertTo-ResourceModel $_
