@@ -111,6 +111,11 @@ function Restore-AzIdentityAssignments(
         #   update identity on the full resource definition, and PUT the changes
         $resourceDefinition = Get-AzResourceDefinition -ResourcePath $path
 
+        if ($null -eq $resourceDefinition)
+        {
+            return $null
+        }
+        
         # Deep copy the GET response to make changes woo reference language, baby!
         $payloadResource = $resourceDefinition | Copy-Object
 

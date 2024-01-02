@@ -109,6 +109,11 @@ function Format-AzResourceDefinition(
         return $null
     }
     
+    if (response.StatusCode -eq 404)
+    {
+        return $null
+    }
+    
     $resourceBody = $response.Content
 
     if ($PSBoundParameters.ContainsKey("FilterOperation"))
