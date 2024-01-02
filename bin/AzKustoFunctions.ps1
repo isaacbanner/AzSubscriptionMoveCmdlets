@@ -54,8 +54,6 @@ function Get-AzKustoClusters()
                 }
             }
         }}
-        
-        Write-Progress -Activity "Kusto: Get database PrincipalAssignments for $($_.Name)" -PercentComplete 100
 
         [PSCustomObject]@{
             ClusterName = $clusterName
@@ -97,7 +95,5 @@ function Restore-AzKustoPrincipalAssignments(
                 New-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role -AsJob | Out-Null
             }
         }
-
-        Write-Progress -Activity "Kusto: Restore database PrincipalAssignments for $($_.ClusterName)" -PercentComplete 100
     }
 }

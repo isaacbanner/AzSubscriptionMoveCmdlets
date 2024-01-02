@@ -29,7 +29,6 @@ function Get-CustomRoleDefinitionsForRoleAssignments {
         }
     }
 
-    Write-Progress -Activity "Backing up custom roles" -PercentComplete 100
     return $customRoleDefinitions
 }
 
@@ -76,8 +75,6 @@ function Add-RoleAssignments {
             }
         }
     }
-
-    Write-Progress -Activity "Restoring role assignments for application principals" -PercentComplete 100
 }
 
 
@@ -142,8 +139,6 @@ function Add-RoleDefinitions {
             New-AzRoleDefinition -Role $item | Out-Null
         }
     }
-
-    Write-Progress -Activity "Restoring custom role definitions" -PercentComplete 100
 }
 
 function Compare-Arrays($a1, $b1) {

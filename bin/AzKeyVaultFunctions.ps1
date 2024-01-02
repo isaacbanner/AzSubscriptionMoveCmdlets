@@ -15,7 +15,6 @@ function Get-AllAzureKeyVaults () {
         $resultAkvList.Add($kv) | out-null
     }
 
-    Write-Progress -Activity "Backing up Azure Keyvault configuration" -PercentComplete 100
     return $resultAkvList
 }
 
@@ -32,19 +31,14 @@ function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
         # Note: wipes all previous access policies on the KV from the old tenant
         Set-AzResource -ResourceId $vault.ResourceId -Properties $vault.Properties -Force | Out-Null
     }
-
-    Write-Progress -Activity "Resetting KeyVault to enable access policies" -PercentComplete 100
 }
 
 function Restore-AzureKeyVaultAccessPolicies ($TenantId, $AllAkvs, $PrincipalIdMapping) {
     Write-Progress -Activity "Restoring KeyVault access policies" 
 
     for ($i=0; $i -lt $AllAkvs.Count; $i++) {
-        Write-Progress -Activity "Restoring KeyVault access policies" -PercentComplete $((100.0 * $i) / $AllAkvs.Count)
         Update-AkvAcessPolicy -tenantId $TenantId -akv $AllAkvs[$i] -PrincipalIdMapping $PrincipalIdMapping | Out-Null
     }
-
-    Write-Progress -Activity "Restoring KeyVault access policies" -PercentComplete 100
 }
 
 function Update-AkvAcessPolicy ($TenantId, $Akv, $PrincipalIdMapping) {

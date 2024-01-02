@@ -61,8 +61,6 @@ function Get-AzSqlResources()
         }
     }
 
-    Write-Progress -Activity "Backing up Azure SQL resources" -PercentComplete 100
-
     if (Get-Module -ListAvailable -Name SqlServer)
     {
         # TODO: SQL external users oh boy
@@ -91,8 +89,6 @@ function Restore-AzSqlServerActiveDirectoryAdministrators(
                 Set-AzSqlServerActiveDirectoryAdministrator -ResourceGroupName $server.ResourceGroupName -ServerName $server.Name -DisplayName $adminIdentity.DisplayName -ObjectId $($ClientIdMapping[$adminIdentity.AppId]) | Out-Null
             }
         }
-
-        Write-Progress -Activity "Restoring Azure SQL configuration" -PercentComplete 100
         
         if (Get-Module -ListAvailable -Name SqlServer)
         {
