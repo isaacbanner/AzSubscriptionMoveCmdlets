@@ -191,10 +191,12 @@ function Restore-AzIdentityAndRbac(
     # TODO: Restore SQL MI and 1PA  assignments
 
     # Create temp identity for UA-only resources
+    Write-Progress -Activity "Creating temporary configuration for restore process"
     $rgName = "TempWorkflowRg-" + [Guid]::NewGuid().ToString()
     $identityName = "TempWorkflowIdentity-" + [Guid]::NewGuid().ToString()
     $tempRg = New-AzResourceGroup -Name $rgName -Location "westus"
     $tempUaIdentity = New-AzUserAssignedIdentity -ResourceGroupName $rgName -Name $identityName -Location "westus"
+    Write-Progress -Activity "Creating temporary configuration for restore process" -Completed
 
     $userAssignedAidMap = @{}
     $userAssignedOidMap = @{}
@@ -254,8 +256,10 @@ function Restore-AzIdentityAndRbac(
     # TODO: Restore SQL
 
     # Clean up temp UA identity
-    Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name
-    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force
+    Write-Progress -Activity "Cleaning up script execution"
+    Remove-AzUserAssignedIdentity -ResourceGroupName $tempUaIdentity.ResourceGroupName -Name $tempUaIdentity.Name | Out-Null
+    Remove-AzResourceGroup -Name $tempRg.ResourceGroupName -Force | Out-Null
+    Write-Progress -Activity "Cleaning up script execution" -Completed
 }
 
 function Remove-MigrationData {

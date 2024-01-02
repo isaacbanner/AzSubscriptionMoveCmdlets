@@ -62,11 +62,11 @@ function Add-RoleAssignments {
 
                 if ($roleAssignment.Condition -and $roleAssignment.ConditionVersion)
                 {
-                    New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion -ObjectType $roleAssignment.ObjectType
+                    New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -Condition $roleAssignment.Condition -ConditionVersion $roleAssignment.ConditionVersion -ObjectType $roleAssignment.ObjectType | Out-Null
                 }
                 else
                 {
-                    New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -ObjectType $roleAssignment.ObjectType
+                    New-AzRoleAssignment -ObjectId $newPrincipalId -RoleDefinitionName $roleAssignment.RoleDefinitionName -Scope $roleAssignment.Scope -ObjectType $roleAssignment.ObjectType | Out-Null
                 }
             }
             else 
@@ -125,7 +125,7 @@ function Add-RoleDefinitions {
             {
                 $existingRole.AssignableScopes.Add($AssignableScope);
                 Write-Debug "Found role definition with same properties but missing assignable scope"
-                New-AzRoleDefinition -Role $item
+                New-AzRoleDefinition -Role $item | Out-Null
             }
             else
             {
@@ -137,7 +137,7 @@ function Add-RoleDefinitions {
             $item.AssignableScopes.Clear();
             $item.AssignableScopes.Add($NewScope);
             
-            New-AzRoleDefinition -Role $item
+            New-AzRoleDefinition -Role $item | Out-Null
         }
     }
 

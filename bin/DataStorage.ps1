@@ -30,7 +30,7 @@ function Set-MigrationData {
 
             if (-not (Test-Path $folderName)) {
                 Write-Debug "$folderName does not exist, creating it."
-                New-Item -Path $folderName -ItemType Directory -Force
+                New-Item -Path $folderName -ItemType Directory -Force | Out-Null
             }
         }
 

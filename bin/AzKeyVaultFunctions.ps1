@@ -26,7 +26,7 @@ function Update-AzureKeyVaultTenantId ($TenantId, $AllAkvs) {
         $vault.Properties.AccessPolicies = @()
 
         # Note: wipes all previous access policies on the KV from the old tenant
-        Set-AzResource -ResourceId $vault.ResourceId -Properties $vault.Properties -Force
+        Set-AzResource -ResourceId $vault.ResourceId -Properties $vault.Properties -Force | Out-Null
     }
 
     Write-Progress -Activity "Resetting KeyVault to enable access policies" -Completed
@@ -76,5 +76,5 @@ function Update-AkvAcessPolicy ($tenantId, $Akv, $PrincipalIdMapping) {
         }
     }
 
-    Invoke-AzRestMethodWithRetry -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5)
+    Invoke-AzRestMethodWithRetry -Method PUT -Path $path -Payload $(ConvertTo-Json $requestBody -Depth 5) | Out-Null
 }

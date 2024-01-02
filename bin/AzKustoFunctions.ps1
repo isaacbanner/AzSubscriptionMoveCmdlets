@@ -73,15 +73,14 @@ function Restore-AzKustoPrincipalAssignments(
 {
     $KustoClusters | % {
         Write-Progress -Activity "Kusto: Restore cluster PrincipalAssignments for $($_.ClusterName)" 
-        $newAssignments = @()
 
         $_.ClusterPrincipalAssignments | ? {
             $PrincipalIdMapping.Keys -contains $_.PrincipalId 
         } | % {
             # Remove the old assignment and recreate for the new service principal object
             # Deletes must be synchronous, if we care about preserving PrincipalAssignmentName, but the creates can be submitted as jobs.
-            Remove-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName
-            $newAssignments += New-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role -AsJob
+            Remove-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName | Out-Null
+            New-AzKustoClusterPrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role -AsJob | Out-Null
         }
 
         $databaseNames = $_.DatabasePrincipalAssignments.Keys
@@ -94,8 +93,8 @@ function Restore-AzKustoPrincipalAssignments(
             } | % {
                 # Remove the old assignment and recreate for the new service principal object
                 # Deletes must be synchronous, if we care about preserving PrincipalAssignmentName, but the creates can be submitted as jobs.
-                Remove-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName
-                $newAssignments += New-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role -AsJob
+                Remove-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName | Out-Null
+                New-AzKustoDatabasePrincipalAssignment -ClusterName $_.ClusterName -ResourceGroupName $_.ResourceGroupName -DatabaseName $_.DatabaseName -PrincipalAssignmentName $_.PrincipalAssignmentName -PrincipalId $PrincipalIdMapping[$_.PrincipalId] -PrincipalType $_.PrincipalType -Role $_.Role -AsJob | Out-Null
             }
         }
 

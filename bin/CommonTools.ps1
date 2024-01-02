@@ -61,7 +61,7 @@ function Select-AzAdServicePrincipal([string] $ApplicationId)
 
 function Get-AzApiVersionsForProvider ([string] $ResourceProvider, [string] $ResourceType)
 {
-    $providerResponse = Invoke-AzRestMethodWithRetry -Path "/providers/$($ResourceProvider)?api-version=2023-07-01"
+    $providerResponse = Invoke-AzRestMethodWithRetry -Method GET -Path "/providers/$($ResourceProvider)?api-version=2023-07-01"
     $provider = ConvertFrom-Json $providerResponse.Content
     $resourceTypeDefinition = $provider.resourceTypes | ? { $ResourceType -eq $_.resourceType }
 

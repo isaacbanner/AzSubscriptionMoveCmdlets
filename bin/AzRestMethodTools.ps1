@@ -5,13 +5,19 @@
 
 function Invoke-AzRestMethodWithRetry(
     [string] $Path,
-    [string] $Method,
+    [ValidateSetAttribute("GET","POST","PUT","PATCH","DELETE")][string] $Method,
     [Parameter(Mandatory=$false)][string] $Payload,
     [int] $Retries = 2)
 {
     for ($i=0; $i -le $Retries; $i++)
     {
-        $response = Invoke-AzRestMethod -Path $Path -Method $Method -Payload $Payload
+        if ($PSBoundParameters.ContainsKey("Payload"))
+        {
+            $response = Invoke-AzRestMethod -Path $Path -Method $Method -Payload $Payload
+        }
+        else {
+            $response = Invoke-AzRestMethod -Path $Path -Method $Method
+        }
 
         if ($response.StatusCode -eq 429)
         {
