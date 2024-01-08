@@ -14,6 +14,7 @@ Import-Module Az
 . $PSScriptRoot\bin\AzRbacFunctions.ps1
 . $PSScriptRoot\bin\AzRestMethodTools.ps1
 . $PSScriptRoot\bin\AzSqlFunctions.ps1
+. $PSScriptRoot\bin\AzDataLakeStorageGen2Functions.ps1
 . $PSScriptRoot\bin\CommonTools.ps1
 . $PSScriptRoot\bin\DataStorage.ps1
 
@@ -67,6 +68,9 @@ function Backup-AzIdentityAndRbac(
     # backup SQL configuration
     $sqlResources = Get-AzSqlResources
 
+    # backup SQL configuration
+    $dataLakeGen2 = Get-DataLakeStorageGen2
+
     if ($PSBoundParameters.ContainsKey("LocalDataFolder"))
     {
         $storageConfig = [StorageConfig]@{
@@ -92,6 +96,7 @@ function Backup-AzIdentityAndRbac(
         $keyVaults | Set-MigrationData -Config $storageConfig -Identifier "keyVaults" -Force:$Force
         $kustoClusters | Set-MigrationData -Config $storageConfig -Identifier "kustoClusters" -Force:$Force
         $sqlResources | Set-MigrationData -Config $storageConfig -Identifier "sqlResources" -Force:$Force
+        $dataLakeGen2 | Set-MigrationData -Config $storageConfig -Identifier "dataLakeGen2" -Force:$Force
         $TenantId | Set-MigrationData -Config $storageConfig - Identifier "backupTenantId" -Force:$Force 
     }
 
@@ -105,6 +110,7 @@ function Backup-AzIdentityAndRbac(
         KeyVaults = $keyVaults
         KustoClusters = $kustoClusters
         SqlResources = $sqlResources
+        DataLakeGen2 = $dataLakeGen2
         BackupTenantId = $TenantId
     }
 }
